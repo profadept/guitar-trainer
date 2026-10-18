@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Guitar Trainer</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1518">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* calm slate + teal — deep desaturated blue-grey base, teal primary, amber reserved for streaks/best */
+  --bg:#0f1518;--bg2:#161f24;--card:#1a252b;--card2:#213038;
+  --line:#2c3d46;--line2:#3a4e59;--text:#e8eef0;--muted:#93a6ae;--dim:#617079;
+  --amber:#e0b15e;--amber-d:#332a17;--green:#4fbfa0;--green-d:#123029;
+  --red:#e08574;--red-d:#331d19;--blue:#69a8d8;--blue-d:#14283a;
+  --teal:#4fbfa0;--teal-d:#123029;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Hanken Grotesk',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:0 0 4rem}
+.wrap{max-width:560px;margin:0 auto;padding:0 14px}
+h1,h2,h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;letter-spacing:-0.01em}
+.mono{font-family:'JetBrains Mono',monospace}
+header{padding:16px 0 10px}
+header h1{font-size:23px;color:var(--teal)}
+
+/* streak bar */
+.streakbar{display:flex;gap:8px;margin:10px 0 14px}
+.streakbox{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center}
+.streakbox .num{font-family:'Bricolage Grotesque';font-size:24px;font-weight:700;color:var(--amber);line-height:1}
+.streakbox .lbl{font-size:10px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+.streakbox.green .num{color:var(--green)}
+.streakbox.blue .num{color:var(--blue)}
+
+/* metronome */
+.metro{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;position:sticky;top:6px;z-index:30}
+.metro-main{display:flex;align-items:center;gap:10px}
+.metro-play{width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;flex:0 0 auto;background:var(--teal);color:#04231a;font-size:18px;display:flex;align-items:center;justify-content:center;font-weight:700;transition:transform .1s}
+.metro-play:active{transform:scale(.93)}
+.metro-play.on{background:var(--green);color:#06231a}
+.metro-adj{width:46px;height:46px;border-radius:12px;border:1px solid var(--line2);background:var(--card);color:var(--text);font-size:22px;cursor:pointer;font-weight:600;flex:0 0 auto;user-select:none}
+.metro-adj:active{background:var(--card2)}
+.metro-center{flex:1;display:flex;flex-direction:column;align-items:center}
+.metro-input{font-family:'Bricolage Grotesque';font-size:30px;font-weight:700;line-height:1;color:var(--text);background:transparent;border:none;text-align:center;width:100%;padding:0;-moz-appearance:textfield}
+.metro-input::-webkit-outer-spin-button,.metro-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.metro-input:focus{outline:none;color:var(--teal)}
+.metro-center .lbl{font-size:10px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+.metro-row2{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:10px}
+.beat-dots{display:flex;gap:5px}
+.beat-dot{width:10px;height:10px;border-radius:50%;background:var(--line2);transition:background .04s}
+.beat-dot.accent{border:1px solid var(--dim)}
+.beat-dot.lit{background:var(--teal)}
+.beat-dot.lit.strong{background:var(--amber)}
+.sig-pill{font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--teal);background:var(--teal-d);border:1px solid var(--teal);border-radius:8px;padding:4px 9px}
+.countin{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.countin .box{width:18px;height:18px;border-radius:5px;border:1px solid var(--line2);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--green)}
+.countin.on .box{background:var(--green-d);border-color:var(--green)}
+.ci-flash{font-family:'Bricolage Grotesque';font-weight:700;color:var(--green);font-size:14px;min-width:18px;text-align:center}
+
+details{background:var(--bg2);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
+summary{padding:14px 16px;cursor:pointer;font-family:'Bricolage Grotesque';font-weight:600;font-size:16px;list-style:none;display:flex;align-items:center;justify-content:space-between}
+summary::-webkit-details-marker{display:none}
+summary .chev{color:var(--dim);font-size:13px;transition:transform .2s}
+details[open] summary .chev{transform:rotate(180deg)}
+.det-body{padding:0 16px 16px}
+
+.drill{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.drill:last-child{margin-bottom:0}
+.drill-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.drill-name{font-weight:600;font-size:14px}
+.drill-desc{font-size:12px;color:var(--muted);margin-top:3px}
+
+.timer{display:flex;align-items:center;gap:4px;flex:0 0 auto}
+.timer-val{font-family:'JetBrains Mono';font-size:16px;font-weight:700;min-width:48px;text-align:center}
+.timer-val.running{color:var(--green)}
+.timer-val.done{color:var(--amber)}
+.timer-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--card2);color:var(--text);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;user-select:none}
+.timer-btn:active{background:var(--line)}
+.timer-btn.play{background:var(--teal);color:#04231a;border-color:var(--teal)}
+.timer-btn.play.on{background:var(--green);color:#06231a;border-color:var(--green)}
+
+.kcard{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden;transition:border-color .15s}
+.kcard:last-child{margin-bottom:0}
+.kcard.closed{background:var(--card)}
+.kcard.closed:hover{border-color:var(--line2)}
+.kcard.open{border-color:var(--line2)}
+.kcard-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 15px;cursor:pointer;user-select:none}
+.kcard.open .kcard-head{padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:2px}
+.kcard-head-l{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+.kcard-head h3{font-size:18px}
+.kcard-head-r{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.kcard-summary{font-size:11px;color:var(--muted);font-family:'JetBrains Mono';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.kcard.open .kcard-summary{display:none}
+.kcard-chev{color:var(--dim);font-size:12px;flex:0 0 auto}
+.kcard-body{padding:12px 15px 15px}
+
+.gate{border-radius:12px;margin-bottom:10px;overflow:hidden;border:1px solid var(--line)}
+.gate-head{display:flex;align-items:center;gap:8px;padding:11px 13px;background:var(--card2)}
+.gate-num{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--muted);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.gate.done .gate-num{background:var(--green-d);color:var(--green)}
+.gate.locked .gate-num{background:var(--line);color:var(--dim)}
+.gate-title{font-size:13px;font-weight:600;flex:1}
+.gate-status{font-size:11px;color:var(--dim)}
+.gate.done .gate-status{color:var(--green)}
+.gate-body{padding:12px 13px}
+.gate.locked .gate-body{display:none}
+.gate.locked .gate-head{opacity:.55}
+
+/* chords gate */
+.chordgrid{display:flex;gap:7px;flex-wrap:wrap}
+.chordcell{flex:1;min-width:66px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:9px 6px;text-align:center;cursor:pointer;transition:.12s}
+.chordcell .nm{font-weight:700;font-size:14px}
+.chordcell .fr{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);letter-spacing:.5px;margin-top:2px}
+.chordcell .mk{font-size:11px;margin-top:5px;color:var(--dim)}
+.chordcell.clean{border-color:var(--green);background:var(--green-d)}
+.chordcell.clean .mk{color:var(--green)}
+
+/* switch pairs */
+.pairlist{display:flex;flex-direction:column;gap:8px}
+.pairitem{border:1px solid var(--line2);border-radius:10px;background:var(--bg2);overflow:hidden}
+.pairitem-head{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer}
+.pairitem-name{font-family:'JetBrains Mono';font-weight:700;font-size:14px;flex:1}
+.streak-pips{display:flex;gap:3px}
+.pip{width:9px;height:9px;border-radius:50%;background:var(--line2)}
+.pip.on{background:var(--green)}
+.pairitem.passed{border-color:var(--green)}
+.pairitem.passed .pairitem-name{color:var(--green)}
+.pairitem-bpm{font-family:'JetBrains Mono';font-size:12px;color:var(--amber)}
+.pairitem-body{display:none;padding:0 12px 12px;border-top:1px solid var(--line)}
+.pairitem.open .pairitem-body{display:block}
+.pairitem.open{border-color:var(--amber)}
+.pair-instr{font-size:11.5px;color:var(--muted);margin:10px 0}
+.pair-instr b{color:var(--amber);font-weight:600}
+.pair-ctrl{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.set-bpm{display:flex;align-items:center;gap:5px}
+.set-bpm button{width:28px;height:28px;border-radius:7px;border:1px solid var(--line2);background:var(--card2);color:var(--text);font-size:15px;cursor:pointer;user-select:none}
+.set-bpm .v{font-family:'JetBrains Mono';font-size:13px;font-weight:700;min-width:54px;text-align:center;color:var(--amber)}
+.honest{display:flex;gap:5px;margin-top:10px}
+.honest button{flex:1;padding:9px 4px;border-radius:9px;border:1px solid var(--line2);background:var(--card2);color:var(--muted);font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Hanken Grotesk'}
+.honest button.clean.sel{background:var(--green-d);color:var(--green);border-color:var(--green)}
+.honest button.half.sel{background:var(--blue-d);color:var(--blue);border-color:var(--blue)}
+.honest button.sloppy.sel{background:var(--red-d);color:var(--red);border-color:var(--red)}
+.minnote{font-size:10.5px;color:var(--dim);margin-top:8px;text-align:center}
+.minnote.met{color:var(--green)}
+.sprint-box{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line2)}
+.sprint-lbl{font-size:11px;color:var(--dim);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
+.sprint-best{font-size:12.5px;color:var(--blue);margin-bottom:8px}
+.sprint-best b{color:var(--text);font-weight:600}
+.sprint-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sprint-input{width:70px;padding:8px 10px;border-radius:8px;border:1px solid var(--line2);background:var(--card2);color:var(--text);font-family:'JetBrains Mono';font-size:14px;font-weight:700;text-align:center}
+.sprint-input::placeholder{color:var(--dim);font-weight:400}
+.lastbox{font-size:11.5px;color:var(--blue);background:var(--blue-d);border:1px solid rgba(111,176,232,.3);border-radius:8px;padding:7px 10px;margin:8px 0}
+.lastbox b{color:var(--text);font-weight:600}
+.streak-now{font-size:12px;color:var(--muted);margin:6px 0 8px;text-align:center}
+.streak-now b{color:var(--amber);font-weight:700}
+.pairitem-bpm.dim{color:var(--dim)}
+
+/* engines */
+.engines{display:flex;flex-direction:column;gap:6px}
+.eng{border:1px solid var(--line2);border-radius:10px;background:var(--bg2);overflow:hidden}
+.eng-head{display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer}
+.eng-num{font-family:'JetBrains Mono';font-weight:700;color:var(--dim);font-size:12px;width:16px}
+.eng-name{font-size:13px;font-weight:600;flex:1}
+.eng-sig{font-family:'JetBrains Mono';font-size:11px;color:var(--dim)}
+.eng-body{display:none;padding:0 12px 12px;border-top:1px solid var(--line)}
+.eng.open .eng-body{display:block}
+.eng.open{border-color:var(--amber)}
+.pattern{font-family:'JetBrains Mono';font-size:21px;font-weight:700;letter-spacing:3px;color:var(--amber);text-align:center;padding:13px 4px 5px;word-spacing:6px}
+.pattern-note{text-align:center;font-size:11px;color:var(--muted);margin-bottom:10px}
+.eng-ctrl{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:4px}
+
+.savebtn{padding:8px 13px;border-radius:8px;border:none;background:var(--amber);color:#1a1206;font-weight:700;font-size:12px;cursor:pointer;font-family:'Hanken Grotesk'}
+.savebtn:disabled{background:var(--line2);color:var(--dim);cursor:not-allowed}
+.savebtn.ready{animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 4px var(--amber-d)}}
+
+.weekwrap{display:flex;flex-direction:column;gap:12px}
+.wglbl{font-size:11px;color:var(--dim);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
+.wkrow{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line);color:var(--muted)}
+.wkrow:last-child{border-bottom:none}
+.wkrow .n{color:var(--text)}
+.wkrow .v{font-family:'JetBrains Mono';font-size:12px;color:var(--green)}
+.wkrow .v.none{color:var(--dim)}
+
+.logtabs{display:flex;gap:6px;margin-bottom:10px}
+.logtabs button{flex:1;padding:7px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'Hanken Grotesk'}
+.logtabs button.active{background:var(--amber-d);color:var(--amber);border-color:var(--amber)}
+.logrow{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--line);color:var(--muted);gap:10px}
+.logrow:last-child{border-bottom:none}
+.logrow .k{color:var(--text);font-weight:600}
+.logrow .m{font-family:'JetBrains Mono';font-size:11.5px;text-align:right;flex:0 0 auto}
+.logrow .type{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);display:block;font-weight:400}
+.empty{text-align:center;color:var(--dim);font-size:13px;padding:16px 0}
+.clearbtn{background:none;border:none;color:var(--dim);font-size:12px;text-decoration:underline;cursor:pointer}
+.ioBtn{padding:7px 11px;border-radius:8px;border:1px solid var(--line2);background:var(--card2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'Hanken Grotesk'}
+.ioBtn:active{background:var(--line)}
+.logday{margin-bottom:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.logday-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 13px;background:var(--card2);cursor:pointer}
+.logday-date{font-family:'Bricolage Grotesque';font-weight:600;font-size:13px;color:var(--text)}
+.logday-sum{font-family:'JetBrains Mono';font-size:11.5px;color:var(--amber);white-space:nowrap}
+.logday-chev{color:var(--dim);margin-left:4px}
+.logday-body{padding:4px 13px 10px}
+.logday-gains{font-size:11px;color:var(--green);padding:8px 0 4px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.foot{text-align:center;color:var(--dim);font-size:12px;margin-top:18px;font-style:italic}
+
+/* ---------- must-log-first toast + pulse ---------- */
+.mustlog-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--amber-d);color:var(--amber);border:1px solid var(--amber);border-radius:14px;padding:11px 18px;font-size:13px;font-family:'Hanken Grotesk';box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:9999;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;display:flex;flex-direction:column;align-items:center;gap:2px;max-width:88vw;text-align:center}
+.mustlog-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.mustlog-toast b{color:var(--text);font-weight:700;font-size:13.5px}
+.mustlog-toast span{color:var(--muted);font-size:11.5px;font-family:'JetBrains Mono'}
+@keyframes savepulse{0%,100%{box-shadow:0 0 0 0 rgba(224,177,94,.6)}50%{box-shadow:0 0 0 8px rgba(224,177,94,0)}}
+.savebtn.pulse{animation:savepulse 1.2s ease-out 2;border-color:var(--amber) !important;background:var(--amber-d) !important;color:var(--amber) !important}
+
+/* ---------- Songs section ---------- */
+.addsong-btn{width:100%;padding:12px;border-radius:12px;border:1px dashed var(--line2);background:transparent;color:var(--teal);font-size:14px;font-weight:600;cursor:pointer;font-family:'Hanken Grotesk';margin-top:4px}
+.addsong-btn:active{background:var(--card)}
+.song-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.song-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.song-name{font-family:'Bricolage Grotesque';font-weight:700;font-size:16px;color:var(--text)}
+.song-key{font-family:'JetBrains Mono';font-size:12px;color:var(--teal);margin-top:2px}
+.song-status{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:20px;white-space:nowrap;flex:0 0 auto}
+.song-status.learning{background:var(--red-d);color:var(--red);border:1px solid var(--red)}
+.song-status.comfortable{background:var(--amber-d);color:var(--amber);border:1px solid var(--amber)}
+.song-status.ready{background:var(--teal-d);color:var(--teal);border:1px solid var(--teal)}
+.song-meta{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
+.song-meta b{color:var(--text);font-weight:600}
+.song-chords{font-family:'JetBrains Mono';font-size:12px;color:var(--text)}
+.song-practice{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.song-count-btn{padding:9px 14px;border-radius:10px;border:1px solid var(--teal);background:var(--teal-d);color:var(--teal);font-size:13px;font-weight:700;cursor:pointer;font-family:'Hanken Grotesk';flex:0 0 auto}
+.song-count-btn:active{background:var(--teal)}
+.song-count-txt{font-size:13px;color:var(--muted)}
+.song-count-txt b{color:var(--amber);font-weight:700;font-family:'JetBrains Mono'}
+.song-actions{display:flex;gap:8px;margin-top:10px}
+.song-mini{font-size:11px;color:var(--dim);background:none;border:none;cursor:pointer;text-decoration:underline;padding:2px 4px;font-family:'Hanken Grotesk'}
+.song-mini.del{color:var(--red);margin-left:auto}
+.song-status-set{display:flex;gap:6px;margin-top:10px}
+.song-status-set button{flex:1;padding:7px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:'Hanken Grotesk'}
+.song-status-set button.sel.learning{background:var(--red-d);color:var(--red);border-color:var(--red)}
+.song-status-set button.sel.comfortable{background:var(--amber-d);color:var(--amber);border-color:var(--amber)}
+.song-status-set button.sel.ready{background:var(--teal-d);color:var(--teal);border-color:var(--teal)}
+/* song form */
+.song-form{background:var(--bg2);border:1px solid var(--line2);border-radius:14px;padding:16px;margin-bottom:12px}
+.song-form h3{font-size:15px;color:var(--teal);margin-bottom:12px}
+.song-form label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px}
+.song-form input[type=text],.song-form input[type=number]{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--line2);background:var(--card);color:var(--text);font-size:14px;font-family:'Hanken Grotesk'}
+.song-form input:focus{outline:none;border-color:var(--teal)}
+.song-form .row2{display:flex;gap:10px}
+.song-form .row2>div{flex:1}
+.song-form .formbtns{display:flex;gap:8px;margin-top:16px}
+.song-form .savebtn2{flex:1;padding:11px;border-radius:10px;border:none;background:var(--teal);color:#04231a;font-size:14px;font-weight:700;cursor:pointer;font-family:'Hanken Grotesk'}
+.song-form .cancelbtn{padding:11px 16px;border-radius:10px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:14px;cursor:pointer;font-family:'Hanken Grotesk'}
+.song-form .status-pick{display:flex;gap:6px}
+.song-form .status-pick button{flex:1;padding:9px;border-radius:9px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'Hanken Grotesk'}
+.song-form .status-pick button.sel{border-color:var(--teal);background:var(--teal-d);color:var(--teal)}
+.song-empty{text-align:center;color:var(--dim);font-size:13px;padding:16px 0}
+.song-total{font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px}
+.song-total b{color:var(--amber);font-weight:700;font-family:'JetBrains Mono'}
+
+/* ---------- responsive: laptop / wide screens ---------- */
+@media (min-width:900px){
+  .wrap{max-width:1080px;padding:0 28px}
+  header h1{font-size:28px}
+  /* keys flow into two columns inside the Keys container */
+  #keys{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  #keys .kcard{margin-bottom:0}
+  /* songs flow into two columns too */
+  #songsBody{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  #songsBody .song-card{margin-bottom:0}
+  /* week rows two columns */
+  .weekwrap{columns:2;column-gap:24px}
+  /* metronome stays sticky at top, comfortable width */
+  .metro{max-width:100%}
+  .metro-input{font-size:34px}
+  /* let the log breathe */
+  .logday-body{padding:4px 20px 12px}
+}
+@media (min-width:1300px){
+  .wrap{max-width:1200px}
+}
+/* daily plan */
+.lockbanner{font-size:12px;border-radius:10px;padding:9px 12px;margin-bottom:10px;background:var(--red-d);color:var(--red);border:1px solid rgba(224,133,116,.35)}
+.lockbanner.part{background:var(--blue-d);color:var(--blue);border-color:rgba(105,168,216,.35)}
+.lockbanner.open{background:var(--green-d);color:var(--green);border-color:rgba(79,191,160,.35)}
+#lockMsg{max-width:90vw;text-align:center}
+.thead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.thead b{font-family:'Bricolage Grotesque';font-size:15px}
+.tmode{font-size:10.5px;font-family:'JetBrains Mono';color:var(--muted);border:1px solid var(--line2);border-radius:999px;padding:3px 9px}
+.tmodes{display:flex;gap:8px;margin:8px 0}
+.tmodes button{flex:1;padding:9px 6px;border-radius:9px;border:1px solid var(--line2);background:var(--card2);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'Hanken Grotesk'}
+.tmodes button.on{background:var(--blue-d);color:var(--blue);border-color:var(--blue)}
+.tnote{font-size:11px;color:var(--dim);margin-bottom:10px}
+.tstatus{font-size:12.5px;border-radius:10px;padding:9px 12px;margin:10px 0;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+.tstatus.met{background:var(--green-d);color:var(--green);border-color:rgba(79,191,160,.35)}
+.tstatus b{color:var(--text)}
+.bud{margin-bottom:8px}
+.bud-top{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:3px}
+.bud-bar{height:7px;border-radius:5px;background:var(--card2);overflow:hidden}
+.bud-bar i{display:block;height:100%;background:var(--teal);border-radius:5px}
+.bud-bar i.over{background:var(--blue)}
+.tblock{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:12px 0 10px}
+.tblock-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.tblock-h b{font-family:'Bricolage Grotesque';font-size:14px}
+.tblock-h span{font-size:11px;color:var(--dim);font-family:'JetBrains Mono';white-space:nowrap}
+.tblock.done .tblock-h span{color:var(--green)}
+.titem{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:6px 0;border-top:1px solid var(--line)}
+.tblock-h + .titem{border-top:none}
+.titem .ck{width:18px;height:18px;border-radius:5px;border:1px solid var(--line2);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;color:#04231a}
+.titem.done .ck{background:var(--green);border-color:var(--green)}
+.titem .tx{flex:1;color:var(--text)}
+.titem.done .tx{color:var(--muted)}
+.titem .sub{display:block;font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono'}
+.tgo{padding:5px 10px;border-radius:8px;border:1px solid var(--line2);background:var(--card2);color:var(--teal);font-size:11.5px;font-weight:600;cursor:pointer}
+.tnote2{font-size:11px;color:var(--dim);margin-top:6px}
+.lvlrow{margin:8px 0}
+.lvl-lbl{font-size:10.5px;color:var(--dim);margin-bottom:5px}
+.lvlchips{display:flex;gap:5px}
+.lvl{flex:1;padding:7px 2px;border-radius:9px;border:1px solid var(--line2);background:var(--card2);color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono';line-height:1.2}
+.lvl small{display:block;font-weight:500;font-size:9.5px;font-family:'Hanken Grotesk';margin-top:2px}
+.lvl.sel{background:var(--teal-d);color:var(--teal);border-color:var(--teal)}
+.lvl.dis{opacity:.5;cursor:not-allowed}
+.freebox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.freebox-t{font-size:12.5px;font-weight:600;margin-bottom:6px}
+.freerow{display:flex;gap:6px}
+.freerow input{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;color:var(--text);padding:8px;font-size:13px;font-family:'Hanken Grotesk'}
+#freeMin{width:64px}
+#freeNote{flex:1;min-width:0}
+.freerow button{padding:8px 12px;border-radius:8px;border:1px solid var(--teal);background:var(--teal-d);color:var(--teal);font-weight:600;cursor:pointer}
+.freerow button:disabled,.freerow input:disabled{opacity:.4;cursor:not-allowed}
+.titem.next{outline:1px solid var(--teal);outline-offset:2px;border-radius:8px;background:var(--teal-d)}
+.starttoast{background:var(--teal-d);color:var(--teal);border-color:var(--teal)}
+/* v4: bands, chips, plan, pain */
+.honest.four{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.honest.four button{padding:8px 2px;font-size:10.5px;line-height:1.2}
+.honest button span{display:block}
+.honest button small{display:block;font-size:10px;font-weight:500;margin-top:3px;opacity:.9;font-family:'JetBrains Mono'}
+.honest button.lost.sel{background:var(--card2);color:var(--text);border-color:var(--muted)}
+.tmodes.three button{font-size:11.5px;padding:9px 3px}
+.tmodes button.pain{border-color:rgba(224,133,116,.5);color:var(--red)}
+.titem .sub .bandline{display:block;color:var(--teal);margin-top:2px}
+#planText{width:100%;min-height:120px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;color:var(--text);padding:10px;font-family:'JetBrains Mono';font-size:11.5px;margin:8px 0;box-sizing:border-box}
+.chipnote{font-size:10.5px;color:var(--dim);margin-top:4px}
+.song-marks{margin-top:8px}
+.tstatus.warn{background:var(--red-d);color:var(--red);border-color:rgba(224,133,116,.35)}
+.tstatus .tgo{margin-left:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Guitar Trainer</h1></header>
+
+  <div class="streakbar">
+    <div class="streakbox green"><div class="num" id="stStreak">0</div><div class="lbl">day streak</div></div>
+    <div class="streakbox"><div class="num" id="stTotal">0</div><div class="lbl">sessions</div></div>
+    <div class="streakbox blue"><div class="num" id="stTime">0</div><div class="lbl">min today</div></div>
+  </div>
+
+  <div class="metro">
+    <div class="metro-main">
+      <button class="metro-adj" id="bpmDown">&minus;</button>
+      <div class="metro-center">
+        <input class="metro-input mono" id="metroInput" type="number" inputmode="numeric" value="70" min="1" max="250">
+        <span class="lbl">BPM &middot; tap to type</span>
+      </div>
+      <button class="metro-adj" id="bpmUp">+</button>
+      <button class="metro-play" id="metroPlay" aria-label="start metronome">&#9654;</button>
+    </div>
+    <div class="metro-row2">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="beat-dots" id="beatDots"></span>
+        <span class="ci-flash" id="ciFlash"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <label class="countin" id="countinToggle"><span class="box" id="ciBox"></span>count-in</label>
+        <span class="sig-pill" id="metroSig">4/4</span>
+      </div>
+    </div>
+  </div>
+
+  <details open id="todayDetails">
+    <summary>Today <span class="chev">&#9660;</span></summary>
+    <div class="det-body" id="today"></div>
+  </details>
+
+  <details id="planDetails">
+    <summary>Weekly plan <span class="chev">&#9660;</span></summary>
+    <div class="det-body">
+      <div id="planStatus" class="lockbanner"></div>
+      <textarea id="planText" spellcheck="false" placeholder="Paste this week's plan block here, then tap Apply plan"></textarea>
+      <div class="formbtns"><button class="savebtn2" id="planApply">Apply plan</button><button class="cancelbtn" id="planClear">Clear plan</button></div>
+      <div class="minnote">Your tutor sends a plan block every Sunday. It sets the engine picks, the starting BPMs and the songs for each day. No plan, no problem: the card uses its defaults.</div>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Warm-up <span class="chev">&#9660;</span></summary>
+    <div class="det-body" id="warmup"></div>
+  </details>
+
+  <details id="keysDetails" open>
+    <summary>Keys <span class="chev">&#9660;</span></summary>
+    <div class="det-body"><div id="keysLock" class="lockbanner"></div><div id="keys"></div></div>
+  </details>
+
+  <details id="songsDetails">
+    <summary>Repertoire <span class="chev">&#9660;</span></summary>
+    <div class="det-body">
+      <div id="songsLock" class="lockbanner"></div>
+      <div class="freebox"><div class="freebox-t">Free practice (self-reported, no timer)</div>
+        <div class="freerow"><input type="number" inputmode="numeric" id="freeMin" min="1" max="300" placeholder="min"><input type="text" id="freeNote" maxlength="80" placeholder="what did you play? (optional)"><button id="freeLog">Log</button></div>
+        <div class="minnote" id="freeLockNote">Counts toward minutes today. Never touches streaks or gates.</div></div>
+      <div id="songsBody"></div>
+      <button class="addsong-btn" id="addSongBtn">+ Add song</button>
+    </div>
+  </details>
+
+  <details>
+    <summary>Progress <span class="chev">&#9660;</span></summary>
+    <div class="det-body"><div id="weekBody" class="weekwrap"></div></div>
+  </details>
+
+  <details>
+    <summary>Practice log <span class="chev">&#9660;</span></summary>
+    <div class="det-body">
+      <div class="logtabs">
+        <button data-logf="today" class="active">Today</button>
+        <button data-logf="all">All time</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <button class="ioBtn" id="exportBackup">Export backup</button>
+        <button class="ioBtn" id="exportText">Export summary</button>
+        <button class="ioBtn" id="importBtn">Import backup</button>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+        <button class="clearbtn" id="clearLog" style="margin-left:auto;align-self:center">clear all</button>
+      </div>
+      <div id="logBody"></div>
+    </div>
+  </details>
+
+  <p class="foot">Chords clean &rarr; switches clean &rarr; then strum. Trust the gates.</p>
+</div>
+<script>
+"use strict";
+
+var CHORDS={G:"320003",C:"x32010",D:"xx0232",Em:"022000",F:"xx3211",Am:"x02210",A:"x02220",E:"022100",Dm:"xx0231",B7:"x21202"};
+var KEYS=[
+  {id:"G",track:"A",loop:["G","C","D","Em"]},
+  {id:"C",track:"A",loop:["C","F","G","Am"]},
+  {id:"D",track:"B",loop:["D","G","A","Em"]},
+  {id:"A",track:"B",loop:["A","D","E","Dm"]},
+  {id:"E",track:"B",loop:["E","A","B7","Am"]}
+];
+var ENGINES=[
+  {n:1,name:"Modern worship",sig:"4/4",pat:"\u2193 \u2193\u2191 \u2193 \u2193\u2191"},
+  {n:2,name:"Sunday march",sig:"4/4",pat:"\u2193 \u2193 \u2193\u2191 \u2193\u2191"},
+  {n:3,name:"Hymn engine",sig:"3/4",pat:"\u2193 \u2193\u2191 \u2193\u2191",note:"Hit beat 1 hard \u00b7 metronome in 3"},
+  {n:4,name:"Nigerian syncopation",sig:"4/4",pat:"\u2193 \u2193\u2191 \u00d7\u2191 \u2193\u2191",note:"\u00d7 = muted/ghost"},
+  {n:5,name:"Minor anchor",sig:"4/4",pat:"\u2193\u2191 \u2193\u2191 \u2193 \u2193"},
+  {n:6,name:"6/8 worship sway",sig:"6/8",pat:"\u2193 _ \u2193 \u2193 _ \u2193",note:"Counts 1-6 \u00b7 felt in 2 \u00b7 accents beats 1 & 4 \u00b7 _ = silent count"},
+  {n:7,name:"16th-note praise",sig:"4/4",pat:"\u2193 \u2193\u2191\u2193\u2191 \u2193 \u2193\u2191\u2193\u2191"},
+  {n:8,name:"Highlife primer",sig:"4/4",pat:"\u2193 \u00d7 \u2191 \u2193\u2191",note:"\u00d7 = mute-chop"}
+];
+var WARMUPS=[
+  {name:"1-2-3-4 calibration",desc:"Up and down the neck, all strings. Strict alternate picking.",sec:120},
+  {name:"Ninja: index-middle",desc:"Index-middle crosses up and down the fretboard.",sec:120},
+  {name:"Ninja: middle-ring",desc:"Middle-ring crosses up and down the fretboard.",sec:120},
+  {name:"Ninja: ring-pinky",desc:"Ring-pinky crosses up and down the fretboard.",sec:120},
+  {name:"Rubber-stamp: E string",desc:"Root on low E, run the major scale shape chromatically up then down.",sec:120},
+  {name:"Rubber-stamp: A string",desc:"Root on A, run the major scale shape chromatically up then down.",sec:120},
+  {name:"Rubber-stamp: D string",desc:"Root on D, run the major scale shape chromatically up then down.",sec:120},
+  {name:"Rubber-stamp: G string",desc:"Root on G, run the major scale shape chromatically up then down.",sec:120},
+  {name:"Arpeggio / picking",desc:"Hold a chord (G, C, D, Em...). Pick strings individually to the metronome. Free to vary the pattern \u2014 low-to-high, double-picking, bass-then-top-3, etc.",sec:180},
+  {name:"Em minor pentatonic",desc:"Open-position box shape: E(open,3) A(open,2) D(open,2) G(open,2) B(open,3) e(open,3). Same 5 notes as G major pentatonic \u2014 works over your G loop.",sec:180}
+];
+var UNLOCK_BPM=60;      // switches must reach this BPM
+var UNLOCK_STREAK=3;    // consecutive mostly-clean sessions
+var MIN_SEC=180;        // min seconds for a switch session to count (pre-unlock)
+var MIN_SEC_MAINT=120;  // min seconds once a key's engines are unlocked
+
+/* ---------- state ---------- */
+function freshPair(){return {curBpm:45,curStreak:0,bestPassed:0,curLevel:null,lastLevel:2,bonus:{},sprintBest:0,sprintDate:null,sprintMark:null};}
+function freshEng(){return {curBpm:60,curStreak:0,bestPassed:0};}
+function freshState(){
+  var s={chords:{},pairs:{},engines:{},songs:[],log:[],lastDay:null,streak:0,total:0};
+  KEYS.forEach(function(k){
+    s.chords[k.id]={};
+    k.loop.forEach(function(c){ s.chords[k.id][c]=false; });
+    s.pairs[k.id]={};
+    pairsForKey(k).forEach(function(p){ s.pairs[k.id][p]=freshPair(); });
+    s.engines[k.id]={};
+    ENGINES.forEach(function(en){ s.engines[k.id][en.n]=freshEng(); });
+  });
+  return s;
+}
+function pairsForKey(k){var p=[],L=k.loop;for(var i=0;i<L.length;i++){p.push(L[i]+"\u2192"+L[(i+1)%L.length]);}return p;}
+
+function migratePair(p){
+  if(p&&typeof p.curStreak==="number"){
+    if(typeof p.curBpm!=="number")p.curBpm=45;
+    if(typeof p.bestPassed!=="number")p.bestPassed=0;
+    if(typeof p.sprintBest!=="number")p.sprintBest=0;
+    if(typeof p.sprintDate==="undefined")p.sprintDate=null;
+    if(typeof p.sprintMark==="undefined")p.sprintMark=null;
+    if(typeof p.curLevel==="undefined")p.curLevel=null;
+    if(typeof p.lastLevel!=="number")p.lastLevel=2;
+    if(!p.bonus||typeof p.bonus!=="object")p.bonus={};
+    return p;
+  }
+  var np=freshPair();
+  if(p&&typeof p.bpm==="number")np.curBpm=p.bpm;
+  if(p&&typeof p.streak==="number")np.curStreak=p.streak;
+  if(p&&p.streak>=UNLOCK_STREAK&&typeof p.bpm==="number")np.bestPassed=p.bpm;
+  return np;
+}
+function migrateEng(e){
+  if(e&&typeof e.curStreak==="number"){
+    if(typeof e.curBpm!=="number")e.curBpm=60;
+    if(typeof e.bestPassed!=="number")e.bestPassed=0;
+    return e;
+  }
+  return freshEng();
+}
+
+var state;
+try{state=JSON.parse(localStorage.getItem("gt4")||"null");}catch(e){state=null;}
+if(!state){state=freshState();}
+else{
+  if(!state.chords)state.chords={};
+  if(!state.pairs)state.pairs={};
+  if(!state.engines)state.engines={};
+  if(!state.log)state.log=[];
+  if(typeof state.streak!=="number")state.streak=0;
+  if(typeof state.total!=="number")state.total=0;
+  KEYS.forEach(function(k){
+    if(!state.chords[k.id])state.chords[k.id]={};
+    k.loop.forEach(function(c){ if(typeof state.chords[k.id][c]!=="boolean")state.chords[k.id][c]=false; });
+    if(!state.pairs[k.id])state.pairs[k.id]={};
+    pairsForKey(k).forEach(function(p){ state.pairs[k.id][p]=migratePair(state.pairs[k.id][p]); });
+    if(!state.engines[k.id])state.engines[k.id]={};
+    ENGINES.forEach(function(en){ state.engines[k.id][en.n]=migrateEng(state.engines[k.id][en.n]); });
+  });
+  if(!Array.isArray(state.songs))state.songs=[];
+  state.songs.forEach(function(sg){ migrateSong(sg); });
+  delete state.engBpm;
+}
+function migrateSong(sg){
+  if(!sg)return;
+  if(typeof sg.id!=="string")sg.id="s"+Math.random().toString(36).slice(2,9);
+  if(typeof sg.name!=="string")sg.name="(untitled)";
+  if(typeof sg.key!=="string")sg.key="";
+  if(typeof sg.chords!=="string")sg.chords="";
+  if(typeof sg.mins!=="number"||isNaN(sg.mins)||sg.mins<0)sg.mins=0;
+  if(typeof sg.strum!=="string")sg.strum="";
+  if(["learning","comfortable","ready"].indexOf(sg.status)<0)sg.status="learning";
+  if(typeof sg.todayCount!=="number"||sg.todayCount<0)sg.todayCount=0;
+  if(typeof sg.countDay!=="string")sg.countDay=null;
+  if(typeof sg.totalCount!=="number"||sg.totalCount<0)sg.totalCount=0;
+  // reset today's counter if the stored day isn't today
+  var tk=todayKey();
+  if(sg.countDay!==tk){ sg.todayCount=0; sg.countDay=tk; }
+}
+function save(){try{localStorage.setItem("gt4",JSON.stringify(state));}catch(e){}}
+
+/* ---------- gate logic ---------- */
+function chordsAllClean(keyId){
+  var c=state.chords[keyId];
+  return Object.keys(c).every(function(k){return c[k]===true;});
+}
+function pairPassed(keyId,pairName){
+  // passed = has ever achieved a full streak at >= unlock bpm
+  var p=state.pairs[keyId][pairName];
+  return p.bestPassed>=UNLOCK_BPM;
+}
+function enginesUnlocked(keyId){
+  if(!chordsAllClean(keyId))return false;
+  var pairs=state.pairs[keyId];
+  return Object.keys(pairs).every(function(pn){return pairPassed(keyId,pn);});
+}
+
+/* ---------- streak / day tracking ---------- */
+function todayKey(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+function ydayKey(){var d=new Date(Date.now()-86400000);return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+var STREAK_SEC=600;
+function timedSecsToday(){var tk=todayKey(),sec=0;state.log.forEach(function(e){if(e.dayKey===tk&&(e.type==="warmup"||e.type==="pair"||e.type==="engine"||e.type==="sprint"||e.type==="song"))sec+=e.secs||0;});return sec;}
+function markPracticedToday(){
+  var tk=todayKey();
+  if(state.lastDay===tk)return; // already counted today
+  if(state.lastDay===ydayKey())state.streak+=1;
+  else state.streak=1;
+  state.lastDay=tk;
+  save();
+}
+function minutesToday(){
+  var sec=0,tk=todayKey();
+  state.log.forEach(function(e){
+    if(e.secs&&e.dayKey===tk)sec+=e.secs;
+  });
+  return Math.round(sec/60);
+}
+function renderStreak(){
+  document.getElementById("stStreak").textContent=state.streak||0;
+  document.getElementById("stTotal").textContent=state.total||0;
+  document.getElementById("stTime").textContent=minutesToday();
+}
+
+/* ---------- metronome ---------- */
+var metroBpm=70,metroOn=false,metroCtx=null,metroTimer=null,countTimer=null,beatIdx=0,beatsPerBar=4,metroAccents=[0],metroStrong=[0],metroSig="4/4",countInOn=false,countingIn=false;
+function sigConfig(sig){if(sig==="3/4")return{beats:3,accents:[0],strong:[0]};if(sig==="6/8")return{beats:6,accents:[0,3],strong:[0]};return{beats:4,accents:[0],strong:[0]};}
+function ensureCtx(){if(!metroCtx){try{metroCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){metroCtx=null;}}if(metroCtx&&metroCtx.state==="suspended")metroCtx.resume();}
+function click(accent){if(!metroCtx)return;var o=metroCtx.createOscillator(),g=metroCtx.createGain();o.frequency.value=accent?1320:880;g.gain.value=0.0001;o.connect(g);g.connect(metroCtx.destination);var t=metroCtx.currentTime;g.gain.exponentialRampToValueAtTime(accent?0.5:0.3,t+0.001);g.gain.exponentialRampToValueAtTime(0.0001,t+0.06);o.start(t);o.stop(t+0.07);}
+function renderBeatDots(){var c=document.getElementById("beatDots");c.innerHTML="";for(var i=0;i<beatsPerBar;i++){var d=document.createElement("span");d.className="beat-dot";if(metroAccents.indexOf(i)>=0)d.className+=" accent";c.appendChild(d);}}
+function setSig(sig){var cfg=sigConfig(sig);metroSig=sig;beatsPerBar=cfg.beats;metroAccents=cfg.accents;metroStrong=cfg.strong;var el=document.getElementById("metroSig");if(el)el.textContent=sig;beatIdx=0;renderBeatDots();}
+function tick(){var dots=document.querySelectorAll(".beat-dot");for(var j=0;j<dots.length;j++){dots[j].classList.remove("lit","strong");}var accent=metroAccents.indexOf(beatIdx)>=0;var strong=metroStrong.indexOf(beatIdx)>=0;if(dots[beatIdx]){dots[beatIdx].classList.add("lit");if(strong)dots[beatIdx].classList.add("strong");}click(accent);beatIdx=(beatIdx+1)%beatsPerBar;}
+function setPlayOn(on){var b=document.getElementById("metroPlay");if(on){b.classList.add("on");b.innerHTML="&#10073;&#10073;";}else{b.classList.remove("on");b.innerHTML="&#9654;";}}
+function startMetro(){ensureCtx();metroOn=true;beatIdx=0;setPlayOn(true);if(countInOn){countingIn=true;var ci=0;var fl=document.getElementById("ciFlash");countTimer=setInterval(function(){click(ci===0);if(fl)fl.textContent=(ci+1);ci++;if(ci>=beatsPerBar){clearInterval(countTimer);countTimer=null;countingIn=false;if(fl)fl.textContent="";tick();metroTimer=setInterval(tick,60000/metroBpm);}},60000/metroBpm);}else{tick();metroTimer=setInterval(tick,60000/metroBpm);}}
+function stopMetro(){metroOn=false;countingIn=false;if(metroTimer){clearInterval(metroTimer);metroTimer=null;}if(countTimer){clearInterval(countTimer);countTimer=null;}setPlayOn(false);var fl=document.getElementById("ciFlash");if(fl)fl.textContent="";var dots=document.querySelectorAll(".beat-dot");for(var j=0;j<dots.length;j++){dots[j].classList.remove("lit","strong");}}
+function setBpm(v,fromInput){metroBpm=Math.max(1,Math.min(250,Math.round(v)||1));var inp=document.getElementById("metroInput");if(inp&&!fromInput)inp.value=metroBpm;if(metroOn&&!countingIn){clearInterval(metroTimer);metroTimer=setInterval(tick,60000/metroBpm);}if(typeof refreshBandChips==="function")refreshBandChips();}
+function lastBpmFor(matchType,matchHead){
+  for(var i=0;i<state.log.length;i++){var e=state.log[i];if(e.type===matchType&&e.head===matchHead&&e.bpmVal)return e.bpmVal;}
+  return null;
+}
+var metroInput=document.getElementById("metroInput");
+metroInput.addEventListener("change",function(){bpmManual=true;setBpm(+this.value,true);this.value=metroBpm;});
+metroInput.addEventListener("blur",function(){this.value=metroBpm;});
+document.getElementById("metroPlay").onclick=function(){metroOn?stopMetro():startMetro();};
+
+/* hold-to-accelerate on +/- */
+var bpmManual=false; // true when YOU changed the BPM by hand since the last start/log
+function holdRepeat(btn,delta){
+  var to,iv;
+  function fire(){bpmManual=true;setBpm(metroBpm+delta);}
+  function start(e){e.preventDefault();fire();to=setTimeout(function(){iv=setInterval(fire,70);},420);}
+  function stop(){clearTimeout(to);clearInterval(iv);}
+  btn.addEventListener("mousedown",start);btn.addEventListener("touchstart",start,{passive:false});
+  ["mouseup","mouseleave","touchend","touchcancel"].forEach(function(ev){btn.addEventListener(ev,stop);});
+}
+holdRepeat(document.getElementById("bpmUp"),1);
+holdRepeat(document.getElementById("bpmDown"),-1);
+
+document.getElementById("countinToggle").onclick=function(){countInOn=!countInOn;var t=document.getElementById("countinToggle"),b=document.getElementById("ciBox");if(countInOn){t.classList.add("on");b.innerHTML="&#10003;";}else{t.classList.remove("on");b.innerHTML="";}};
+
+/* ---------- timers (start metronome automatically) ---------- */
+var timers={};
+function fmt(s){var m=Math.floor(s/60),ss=s%60;return m+":"+(ss<10?"0":"")+ss;}
+function makeTimer(id,total,opt){if(!timers[id])timers[id]={left:total,total:total,run:false,iv:null,sig:(opt&&opt.sig)||"4/4",bpm:(opt&&opt.bpm)||null,onDone:(opt&&opt.onDone)||null,elapsed:0,completed:false,noMetro:!!(opt&&opt.noMetro)};else{if(opt&&opt.sig)timers[id].sig=opt.sig;if(opt&&opt.bpm!=null)timers[id].bpm=opt.bpm;if(opt&&opt.onDone)timers[id].onDone=opt.onDone;if(opt&&opt.noMetro!=null)timers[id].noMetro=opt.noMetro;}return timers[id];}
+function timerHTML(id,total){makeTimer(id,total);var t=timers[id];return '<div class="timer">'+
+  '<button class="timer-btn" data-tadj="'+id+'" data-d="-30">&minus;</button>'+
+  '<button class="timer-btn play'+(t.run?' on':'')+'" data-tstart="'+id+'">'+(t.run?'&#10073;&#10073;':'&#9654;')+'</button>'+
+  '<span class="timer-val'+(t.run?' running':(t.completed?' done':''))+'" id="tv-'+id+'">'+fmt(t.left)+'</span>'+
+  '<button class="timer-btn" data-tadj="'+id+'" data-d="30">+</button>'+
+  '<button class="timer-btn" data-treset="'+id+'">&#8634;</button></div>';}
+function markReady(id){var sb=document.querySelector('[data-savefor="'+id+'"]');if(sb){sb.classList.add("ready");sb.disabled=false;}}
+function markNotReady(id){var t=timers[id];if(t)t.completed=false;var sb=document.querySelector('[data-savefor="'+id+'"]');if(sb){sb.classList.remove("ready");sb.disabled=true;}}
+function tickTimer(id){var t=timers[id];if(!t)return;t.left--;t.elapsed++;var el=document.getElementById("tv-"+id);if(el)el.textContent=fmt(t.left);if(t.left<=0){clearInterval(t.iv);t.run=false;t.left=0;t.completed=true;if(!t.noMetro)t.bpmAtStop=metroBpm;activeTimerId=(activeTimerId===id)?null:activeTimerId;if(el){el.classList.remove("running");el.classList.add("done");el.textContent="done";}var btn=document.querySelector('[data-tstart="'+id+'"]');if(btn){btn.innerHTML="&#9654;";btn.classList.remove("on");}if(!t.noMetro)stopMetro();markReady(id);if(typeof refreshBandChips==="function")refreshBandChips();if(typeof t.onDone==="function")t.onDone(t);if(metroCtx){click(true);setTimeout(function(){click(true);},150);setTimeout(function(){click(true);},300);}}}
+function timerHumanName(id){
+  // Map a timer id back to a human-readable practice name for the reminder.
+  if(!id)return "your last session";
+  if(id==="sq")return "Barre squeeze walk";
+  if(id.indexOf("wu")===0){ var wi=parseInt(id.slice(2),10); return (WARMUPS[wi]&&WARMUPS[wi].name)||"warm-up"; }
+  if(id.indexOf("sw-")===0){ // sw-<keyId>-<pairSlug>
+    var rest=id.slice(3); var dash=rest.indexOf("-");
+    var kid=rest.slice(0,dash); var slug=rest.slice(dash+1);
+    if(state.pairs&&state.pairs[kid]){
+      var match=Object.keys(state.pairs[kid]).find(function(pn){return pn.replace(/[^A-Za-z0-9]/g,"")===slug;});
+      if(match) return "Key of "+kid+" \u00b7 "+match;
+    }
+    return "switch practice";
+  }
+  if(id.indexOf("sp-")===0){ // sp-<keyId>-<pairSlug> (sprint)
+    var srest=id.slice(3); var sdash=srest.indexOf("-");
+    var skid=srest.slice(0,sdash); var sslug=srest.slice(sdash+1);
+    if(state.pairs&&state.pairs[skid]){
+      var smatch=Object.keys(state.pairs[skid]).find(function(pn){return pn.replace(/[^A-Za-z0-9]/g,"")===sslug;});
+      if(smatch) return "Sprint \u00b7 "+skid+" "+smatch;
+    }
+    return "sprint";
+  }
+  if(id.indexOf("eng-")===0){ // eng-<keyId>-<engNum>
+    var parts=id.slice(4).split("-"); var ekid=parts[0]; var eno=parseInt(parts[1],10);
+    var eng=ENGINES.find(function(x){return x.n===eno;});
+    return "Engine "+eno+(eng?(" "+eng.name):"")+" \u00b7 Key of "+ekid;
+  }
+  return "your last session";
+}
+function pendingUnloggedTimerId(){
+  // Returns the id of any timer that has completed=true and is NOT currently running.
+  // If multiple exist, returns the first found — practically only one can exist at a time.
+  var found=null;
+  Object.keys(timers).forEach(function(k){
+    if(timers[k] && timers[k].completed && !timers[k].run){ if(!found) found=k; }
+  });
+  return found;
+}
+function flashMustLogReminder(pendingId){
+  var name=timerHumanName(pendingId);
+  var msgEl=document.getElementById("mustLogMsg");
+  if(!msgEl){
+    msgEl=document.createElement("div");
+    msgEl.id="mustLogMsg";
+    msgEl.className="mustlog-toast";
+    document.body.appendChild(msgEl);
+  }
+  msgEl.innerHTML='<b>Log your last session first</b><span>'+name+'</span>';
+  msgEl.classList.add("show");
+  // scroll the pending save button into view and pulse it
+  var sb=document.querySelector('[data-savefor="'+pendingId+'"]');
+  if(sb){
+    sb.classList.add("pulse");
+    try{ sb.scrollIntoView({behavior:"smooth",block:"center"}); }catch(e){}
+    setTimeout(function(){ if(sb)sb.classList.remove("pulse"); },2400);
+  }
+  clearTimeout(flashMustLogReminder._t);
+  flashMustLogReminder._t=setTimeout(function(){ msgEl.classList.remove("show"); },2600);
+}
+var activeTimerId=null;
+function startTimerById(id){
+  var t=timers[id];if(!t)return;var el=document.getElementById("tv-"+id);var btn=document.querySelector('[data-tstart="'+id+'"]');
+  if(t.run){
+    // manual stop BEFORE reaching zero: does NOT count as completed, log stays locked
+    clearInterval(t.iv);t.run=false;if(activeTimerId===id)activeTimerId=null;if(!t.noMetro)t.bpmAtStop=metroBpm;
+    if(btn){btn.innerHTML="&#9654;";btn.classList.remove("on");}
+    if(el)el.classList.remove("running");
+    if(!t.noMetro)stopMetro();
+    if(!t.completed){ markNotReady(id); } // early stop never unlocks the save button
+    return;
+  }
+  // STRICT MUST-LOG RULE: if ANY timer has a completed-but-unlogged session, block starting anything
+  var pending=pendingUnloggedTimerId();
+  if(pending){ flashMustLogReminder(pending); return; }
+  var lockWhy=lockReasonFor(id); if(lockWhy){ flashLockToast(lockWhy); return; }
+  if(t.left<=0){t.left=t.total;}
+  t.completed=false; markNotReady(id); // starting a fresh run always re-locks the save button
+  t.run=true;t.elapsed=t.elapsed||0;if(btn){btn.innerHTML="&#10073;&#10073;";btn.classList.add("on");}if(el){el.classList.add("running");el.classList.remove("done");el.textContent=fmt(t.left);}
+  if(!t.noMetro){
+    activeTimerId=id;
+    if(t.sig)setSig(t.sig);
+    if(t.elapsed===0){var tgt=timerTarget(id);if(tgt){if(bpmManual){flashStartToast(metroBpm,"your own BPM (the target was "+tgt.bpm+")");}else{setBpm(tgt.bpm);flashStartToast(tgt.bpm,tgt.why);}}bpmManual=false;}
+    if(!metroOn)startMetro();
+  }
+  t.iv=setInterval(function(){tickTimer(id);},1000);
+}
+document.addEventListener("click",function(e){
+  var s=e.target.closest("[data-tstart]");if(s){startTimerById(s.getAttribute("data-tstart"));return;}
+  var a=e.target.closest("[data-tadj]");if(a){var aid=a.getAttribute("data-tadj"),d=+a.getAttribute("data-d"),at=timers[aid];if(!at||at.run)return;var _p1=pendingUnloggedTimerId();if(_p1){flashMustLogReminder(_p1);return;}at.total=Math.max(30,at.total+d);at.left=at.total;at.completed=false;markNotReady(aid);var ael=document.getElementById("tv-"+aid);if(ael){ael.textContent=fmt(at.left);ael.classList.remove("done");}return;}
+  var r=e.target.closest("[data-treset]");if(r){var rid=r.getAttribute("data-treset"),rt=timers[rid];var _p2=pendingUnloggedTimerId();if(_p2){flashMustLogReminder(_p2);return;}clearInterval(rt.iv);rt.run=false;rt.left=rt.total;rt.elapsed=0;rt.completed=false;var rel=document.getElementById("tv-"+rid);if(rel){rel.textContent=fmt(rt.total);rel.classList.remove("running","done");}var rb=document.querySelector('[data-tstart="'+rid+'"]');if(rb){rb.innerHTML="&#9654;";rb.classList.remove("on");}stopMetro();markNotReady(rid);return;}
+});
+
+/* ---------- log ---------- */
+var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var logFilter="today";
+function pushLog(entry){var d=new Date();var hh=d.getHours(),mm=d.getMinutes();var ap=hh>=12?"pm":"am";var h12=hh%12;if(h12===0)h12=12;entry.ts=d.getTime();entry.dayKey=todayKey();entry.date=d.getDate()+" "+MONTHS[d.getMonth()];entry.time=h12+":"+(mm<10?"0":"")+mm+ap;state.log.unshift(entry);bpmManual=false;state.total=(state.total||0)+1;if(timedSecsToday()>=STREAK_SEC)markPracticedToday();save();renderStreak();if(typeof renderDaily==="function")renderDaily();}
+var TYPE_LABEL={warmup:"Warm-up",chord:"Chord check",pair:"Switch",engine:"Engine",sprint:"Sprint",song:"Song",free:"Free practice",pain:"Pain stop"};
+function isToday(ts){if(!ts)return false;var d=new Date(),s=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();return ts>=s;}
+var openDays={};
+function dayHeading(dayKey){
+  // dayKey is "YYYY-M-D"; build a nice label
+  var parts=dayKey.split("-");var dt=new Date(+parts[0],+parts[1]-1,+parts[2]);
+  return dt.getDate()+" "+MONTHS[dt.getMonth()]+" "+dt.getFullYear();
+}
+function renderLog(){
+  var b=document.getElementById("logBody");
+  var list=state.log.filter(function(e){return logFilter==="all"?true:isToday(e.ts);});
+  if(!list.length){b.innerHTML='<div class="empty">'+(logFilter==="today"?"Nothing logged today yet.":"No sessions logged yet.")+'</div>';return;}
+  // group by dayKey, preserving order (log is newest-first)
+  var groups=[],idx={};
+  list.forEach(function(e){
+    var dk=e.dayKey||"unknown";
+    if(idx[dk]===undefined){idx[dk]=groups.length;groups.push({dk:dk,items:[]});}
+    groups[groups.length-1] && groups[idx[dk]].items.push(e);
+  });
+  var h="";
+  groups.forEach(function(g){
+    var totalSec=0,advanced=[];
+    g.items.forEach(function(e){
+      if(e.secs)totalSec+=e.secs;
+      if(e.type==="pair"&&e.advancedTo){advanced.push(e.pairName+" \u2192 "+e.advancedTo);}
+    });
+    var mins=Math.round(totalSec/60);
+    // collect streak gains noted in entries
+    var gains=g.items.filter(function(e){return e.streakGain;}).map(function(e){return e.head.replace("Key of ","").replace(" \u00b7 "," ")+" ("+e.streakGain+")";});
+    var summaryBits=[mins+" min"];
+    if(gains.length)summaryBits.push(gains.length+" streak gain"+(gains.length>1?"s":""));
+    var isOpen=openDays[g.dk]!==false; // default open for today, but we collapse others
+    // default: today open, older collapsed
+    if(openDays[g.dk]===undefined){ isOpen = isToday(g.items[0].ts); }
+    else { isOpen = openDays[g.dk]; }
+    h+='<div class="logday">'+
+      '<div class="logday-head" data-daytoggle="'+g.dk+'">'+
+        '<span class="logday-date">Log for '+dayHeading(g.dk)+'</span>'+
+        '<span class="logday-sum">'+summaryBits.join(" \u00b7 ")+' <span class="logday-chev">'+(isOpen?"\u25be":"\u25b8")+'</span></span>'+
+      '</div>';
+    if(isOpen){
+      h+='<div class="logday-body">';
+      if(gains.length){h+='<div class="logday-gains">Advanced: '+gains.join(", ")+'</div>';}
+      g.items.forEach(function(e){
+        var head=e.head||"",meta=e.meta||"";
+        h+='<div class="logrow"><span class="k"><span class="type">'+e.time+" \u00b7 "+(TYPE_LABEL[e.type]||"")+'</span>'+head+'</span><span class="m">'+meta+'</span></div>';
+      });
+      h+='</div>';
+    }
+    h+='</div>';
+  });
+  b.innerHTML=h;
+}
+document.querySelectorAll("[data-logf]").forEach(function(btn){btn.onclick=function(){document.querySelectorAll("[data-logf]").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");logFilter=btn.getAttribute("data-logf");renderLog();};});
+document.getElementById("logBody").addEventListener("click",function(e){var t=e.target.closest("[data-daytoggle]");if(t){var dk=t.getAttribute("data-daytoggle");var cur=openDays[dk];if(cur===undefined){cur=isTodayKey(dk);}openDays[dk]=!cur;renderLog();}});
+function isTodayKey(dk){return dk===todayKey();}
+document.getElementById("clearLog").onclick=function(){if(window.confirm("Clear ALL history and progress? This cannot be undone.")){state=freshState();save();renderAll();}};
+
+/* ---------- warmup render ---------- */
+var wuMark={};
+function renderWarmup(){
+  var c=document.getElementById("warmup"),h="";
+  var st=dayStatus(),vis,head="";
+  _warmSig=warmSignature();
+  if(st.complete){
+    vis=WARMUPS.map(function(w,i){return i;});
+    head='<div class="lockbanner open">Extra drills: today\'s target is met, so every warm-up is open.</div>';
+  } else if(st.core.complete){
+    c.innerHTML='<div class="lockbanner">Warm-up core is done and locked. Extra drills open when today\'s target is met.</div>';
+    return;
+  } else {
+    vis=st.core.pool;
+    head='<div class="lockbanner part">Today\'s core: '+st.core.remaining+' left'+(st.core.pick?' \u00b7 pick 1 ninja pair and 2 rubber-stamp strings':'')+'. Other drills open as extras after today\'s target.</div>';
+  }
+  vis.forEach(function(i){var w=WARMUPS[i];
+    var id="wu"+i;
+    makeTimer(id,w.sec,{sig:"4/4"});
+    if(wuMark[i]===undefined)wuMark[i]=null;var mk=wuMark[i];
+    var lastW=lastBpmFor("warmup",w.name);
+    h+='<div class="drill"><div class="drill-top">'+
+      '<div><div class="drill-name">'+w.name+'</div><div class="drill-desc">'+w.desc+'</div></div>'+
+      timerHTML(id,w.sec)+'</div>'+
+      '<div class="lastbox">'+(lastW?"Last session: <b>"+lastW+" BPM</b>":"No sessions logged yet")+'</div>'+
+      chipsHTML("data-wupf",i,mk,'data-bkind="'+((i===8||i===9)?"sw":"wu")+'" data-bandfor="'+id+'"')+
+      '<div style="text-align:right;margin-top:8px"><button class="savebtn" data-savefor="'+id+'" data-wusave="'+i+'"'+((mk&&timers[id]&&timers[id].completed)?"":" disabled")+'>Log</button></div></div>';
+  });
+  if(st.core.sqReq||st.complete)h+=squeezeCardHTML();
+  c.innerHTML=head+h;refreshBandChips();
+}
+document.getElementById("warmup").addEventListener("click",function(e){
+  var t;
+  if((t=e.target.closest("[data-sqsave]"))){var sqt=timers.sq;if(!sqt||!sqt.completed)return;pushLog({type:"warmup",head:SQ_NAME,meta:fmt(sqt.total)+" \u00b7 done",secs:sqt.total});sqt.elapsed=0;sqt.left=sqt.total;sqt.completed=false;renderWarmup();renderLog();renderWeek();return;}
+  if((t=e.target.closest("[data-wupf]"))){var i=+t.getAttribute("data-wupf"),v=t.getAttribute("data-v");wuMark[i]=wuMark[i]===v?null:v;renderWarmup();return;}
+  if((t=e.target.closest("[data-wusave]"))){var idx=+t.getAttribute("data-wusave");var raw=wuMark[idx];if(!raw)return;var tm=timers["wu"+idx];if(!tm||!tm.completed)return;var secs=tm?tm.total:0;var bpmv=(tm&&tm.bpmAtStop)?tm.bpmAtStop:metroBpm;var wmk=(raw==="lost")?"half":raw,wkd=(idx===8||idx===9)?"sw":"wu";pushLog({type:"warmup",head:WARMUPS[idx].name,meta:bpmv+" BPM \u00b7 "+labelOf(wmk)+(raw==="lost"?" \u00b7 lost count":""),secs:secs,bpmVal:bpmv,range:rangeLabel(wkd,bpmv,secs,raw),lost:(raw==="lost")||undefined});if(tm){tm.elapsed=0;tm.left=tm.total;tm.bpmAtStop=null;tm.completed=false;}wuMark[idx]=null;renderWarmup();renderLog();renderWeek();return;}
+});
+function labelOf(v){return v==="clean"?"\u2713 mostly clean":v==="half"?"~ about half":"\u2717 sloppy";}
+
+/* ---------- daily plan: targets, locks, Today card ---------- */
+var PLAN={aN:7,maintSec:960,warmMin:16,songMin:17};
+var ENG_SEC=120;
+var GATE_LEVEL=2;
+var DOW_NAMES=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var LEVELS={1:{s:"4/bar"},2:{s:"8/bar \u2193"},3:{s:"8/bar \u2193\u2191"},4:{s:"16/bar"}};
+var WU_FIXED=[0,8,9],WU_NINJA=[1,2,3],WU_RUB=[4,5,6,7];
+var WU_SCHED={1:{n:[1],r:[4,5]},2:{n:[2],r:[6,7]},3:{n:[3],r:[4,5]},4:{n:[1],r:[6,7]},5:{n:[2],r:[4,5]},6:{n:[3],r:[6,7]}};
+var WU_TARGET={8:70,9:60};
+var A_PAIRS=["E\u2192Dm","Dm\u2192A","A\u2192D","D\u2192E"];
+var pairLevel={};
+var _warmSig="";
+var SQ_SEC=120,SQ_NAME="Barre squeeze walk";
+
+function todayLogs(){var tk=todayKey();return state.log.filter(function(e){return e.dayKey===tk;});}
+function curDow(){return new Date().getDay();}
+function dayMode(){return(state.dayMode&&state.dayMode.day===todayKey())?state.dayMode.mode:"normal";}
+function setDayMode(m){state.dayMode={day:todayKey(),mode:m};save();renderDaily();}
+function tickOn(n){return !!(state.ticks&&state.ticks.day===todayKey()&&state.ticks[n]);}
+function tickToggle(n){if(!state.ticks||state.ticks.day!==todayKey())state.ticks={day:todayKey()};state.ticks[n]=!state.ticks[n];save();}
+function isAHead(h){return !!h&&h.indexOf("Key of A \u00b7")===0;}
+
+function coreStatus(){
+  var dow=curDow(),tl=todayLogs(),m=dayMode();
+  var short=(m==="short"),pick=(dow===0)&&!short;
+  var nIdx=short?[]:(pick?WU_NINJA:WU_SCHED[dow].n),rIdx=short?[]:(pick?WU_RUB:WU_SCHED[dow].r);
+  var fixed=short?[0]:WU_FIXED;
+  var sqReq=(m!=="rest");
+  function done(i){return tl.some(function(e){return e.type==="warmup"&&e.head===WARMUPS[i].name;});}
+  var fixedLeft=fixed.filter(function(i){return !done(i);}).length;
+  var nDone=nIdx.filter(done).length,rDone=rIdx.filter(done).length;
+  var needN=short?0:(pick?1:nIdx.length),needR=short?0:(pick?2:rIdx.length);
+  var sqDone=tl.some(function(e){return e.type==="warmup"&&e.head===SQ_NAME;});
+  var remaining=fixedLeft+Math.max(0,needN-nDone)+Math.max(0,needR-rDone)+((sqReq&&!sqDone)?1:0);
+  var pool=fixed.concat(nIdx,rIdx).sort(function(a,b){return a-b;});
+  return {pick:pick,short:short,sqReq:sqReq,nIdx:nIdx,rIdx:rIdx,needN:needN,needR:needR,remaining:remaining,complete:remaining===0,pool:pool,done:done,sqDone:sqDone};
+}
+function aToday(){var cnt=0,sec=0;todayLogs().forEach(function(e){if(e.type==="pair"&&isAHead(e.head)){sec+=e.secs||0;if((e.secs||0)>=MIN_SEC)cnt++;}});return {count:cnt,sec:sec};}
+function maintToday(){var sec=0;todayLogs().forEach(function(e){if(((e.type==="pair"&&!isAHead(e.head))||e.type==="engine")&&(e.secs||0)>=MIN_SEC_MAINT)sec+=e.secs;});return {sec:sec};}
+function targets(){
+  var m=dayMode(),dow=curDow();
+  if(m==="rest")return {aN:0,maintSec:0,songSec:0};
+  if(m==="short")return {aN:1,maintSec:0,songSec:1};
+  if(dow===0)return {aN:0,maintSec:PLAN.maintSec,songSec:PLAN.songMin*60};
+  return {aN:PLAN.aN,maintSec:PLAN.maintSec,songSec:PLAN.songMin*60};
+}
+function songsToday(){var sec=0;todayLogs().forEach(function(e){if(e.type==="song")sec+=e.secs||0;});return {sec:sec};}
+function dayStatus(){
+  var core=coreStatus(),t=targets(),a=aToday(),mt=maintToday();
+  var aMet=a.count>=t.aN,mMet=mt.sec>=t.maintSec,sg=songsToday(),sMet=sg.sec>=t.songSec;
+  var open123=core.complete&&aMet&&mMet;
+  return {core:core,t:t,a:a,m:mt,s:sg,aMet:aMet,mMet:mMet,sMet:sMet,open123:open123,complete:open123&&sMet};
+}
+function lockReasonFor(id){
+  var st=dayStatus(),m=dayMode();
+  if(id.indexOf("wu")===0||id==="sq"){
+    var i=parseInt(id.slice(2),10);
+    if(st.complete)return null;
+    if(id==="sq"&&!st.core.sqReq)return "Skipped on a Hands rest day: the squeeze walk loads the index.";
+    if(st.core.complete)return "Warm-up core is done and locked. Extra drills open when today's target is met.";
+    if(id!=="sq"&&st.core.pool.indexOf(i)<0)return "Not in today's core. It opens as an extra drill after today's target.";
+    return null;
+  }
+  var kid=null;
+  if(id.indexOf("sw-")===0||id.indexOf("sp-")===0)kid=id.slice(3).split("-")[0];
+  else if(id.indexOf("eng-")===0)kid=id.slice(4).split("-")[0];
+  if(kid===null)return null;
+  if(m==="rest")return "Hands rest day: no switch or engine sessions today.";
+  if(!st.core.complete)return "Finish the warm-up core first ("+st.core.remaining+" left).";
+  if(kid!=="A"&&!st.aMet)return "Finish today's Key A block first ("+st.a.count+"/"+st.t.aN+" sessions).";
+  return null;
+}
+function flashLockToast(msg){
+  var el=document.getElementById("lockMsg");
+  if(!el){el=document.createElement("div");el.id="lockMsg";el.className="mustlog-toast";document.body.appendChild(el);}
+  el.innerHTML="<b>Locked</b><span>"+msg+"</span>";
+  el.classList.add("show");
+  clearTimeout(flashLockToast._t);
+  flashLockToast._t=setTimeout(function(){el.classList.remove("show");},3400);
+}
+
+/* ---- suggested targets ---- */
+function lastEntryFor(type,head){for(var i=0;i<state.log.length;i++){var e=state.log[i];if(e.type===type&&e.head===head)return e;}return null;}
+function targetBpm(cur,streak,last){
+  if(streak>=UNLOCK_STREAK)return cur+2;
+  if(streak===0&&last&&(last.meta||"").indexOf("mostly clean")<0)return Math.max(30,cur-2);
+  return cur;
+}
+function slugOf(s){return s.replace(/[^A-Za-z0-9]/g,"");}
+function targetWhy(cur,streak,last){
+  if(streak>=UNLOCK_STREAK)return UNLOCK_STREAK+" clean at "+cur+", so +2";
+  if(streak===0&&last&&(last.meta||"").indexOf("mostly clean")<0)return "last pass at "+cur+" was not clean, so -2";
+  if(streak>0)return "building the streak: "+streak+"/"+UNLOCK_STREAK+" at "+cur;
+  return "starting point";
+}
+function lastEngEntry(k,n){var pre="Key of "+k+" \u00b7 Eng "+n+" ";for(var i=0;i<state.log.length;i++){var e=state.log[i];if(e.type==="engine"&&e.head&&e.head.indexOf(pre)===0)return e;}return null;}
+function timerTarget(id){
+  if(id.indexOf("sw-")===0){
+    var rest=id.slice(3),dash=rest.indexOf("-"),kid=rest.slice(0,dash),sl=rest.slice(dash+1);
+    if(!state.pairs[kid])return null;
+    var pn=Object.keys(state.pairs[kid]).find(function(x){return slugOf(x)===sl;});if(!pn)return null;
+    var ovp=planBpmOverride(kid+"|"+pn);if(ovp!=null)return {bpm:ovp,why:"weekly plan: start here this week"};
+    var pd=state.pairs[kid][pn],last=lastEntryFor("pair","Key of "+kid+" \u00b7 "+pn);
+    return {bpm:targetBpm(pd.curBpm,pd.curStreak,last),why:targetWhy(pd.curBpm,pd.curStreak,last)};
+  }
+  if(id.indexOf("eng-")===0){
+    var er=id.slice(4).split("-"),ek=er[0],en=+er[1];
+    if(!state.engines[ek]||!state.engines[ek][en])return null;
+    var ove=planBpmOverride(ek+"|"+en);if(ove!=null)return {bpm:ove,why:"weekly plan: start here this week"};
+    var ed=state.engines[ek][en],le=lastEngEntry(ek,en);
+    return {bpm:targetBpm(ed.curBpm,ed.curStreak,le),why:targetWhy(ed.curBpm,ed.curStreak,le)};
+  }
+  if(id.indexOf("wu")===0){
+    var wi=parseInt(id.slice(2),10);if(!WARMUPS[wi])return null;
+    var lb=lastBpmFor("warmup",WARMUPS[wi].name);
+    return lb?{bpm:lb,why:"your last logged BPM for this drill"}:null;
+  }
+  return null;
+}
+function flashStartToast(bpm,why){
+  var el=document.getElementById("startMsg");
+  if(!el){el=document.createElement("div");el.id="startMsg";el.className="mustlog-toast starttoast";document.body.appendChild(el);}
+  el.innerHTML="<b>Starting at "+bpm+" BPM</b><span>"+why+"</span>";
+  el.classList.add("show");
+  clearTimeout(flashStartToast._t);
+  flashStartToast._t=setTimeout(function(){el.classList.remove("show");},3400);
+}
+function blindPair(){
+  var base=new Date(2026,9,14),d=new Date();
+  var days=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-base)/86400000);
+  var w=Math.floor(days/7);
+  return A_PAIRS[((w%4)+4)%4];
+}
+function squeezeCardHTML(){
+  makeTimer("sq",SQ_SEC,{noMetro:true});
+  var last=null;for(var i=0;i<state.log.length;i++){var e=state.log[i];if(e.type==="warmup"&&e.head===SQ_NAME){last=e;break;}}
+  var tm=timers.sq;
+  return '<div class="drill"><div class="drill-top"><div><div class="drill-name">'+SQ_NAME+'</div><div class="drill-desc">Thumb behind the neck, index flat across all 6 strings, squeeze 5 s, release fully, walk up and down the frets. No strumming, no metronome, no mark.</div></div>'+timerHTML("sq",SQ_SEC)+'</div>'+
+    '<div class="lastbox">'+(last?'Last done: <b>'+last.date+'</b>':'Not logged yet')+'</div>'+
+    '<div style="text-align:right;margin-top:8px"><button class="savebtn" data-savefor="sq" data-sqsave="1"'+((tm&&tm.completed)?'':' disabled')+'>Log</button></div></div>';
+}
+function returnToToday(){
+  var d=document.getElementById("todayDetails");if(d)d.open=true;
+  renderToday();
+  setTimeout(function(){
+    var row=document.querySelector("#today .titem.next")||document.getElementById("today");
+    try{row.scrollIntoView({behavior:"smooth",block:"center"});}catch(err){}
+  },80);
+}
+function pairTarget(k,pn){var ovp=planBpmOverride(k+"|"+pn);if(ovp!=null)return ovp;var pd=state.pairs[k][pn];return targetBpm(pd.curBpm,pd.curStreak,lastEntryFor("pair","Key of "+k+" \u00b7 "+pn));}
+function engTarget(k,n){var ove=planBpmOverride(k+"|"+n);if(ove!=null)return ove;var ed=state.engines[k][n];var pre="Key of "+k+" \u00b7 Eng "+n+" ";var last=null;for(var i=0;i<state.log.length;i++){var e=state.log[i];if(e.type==="engine"&&e.head&&e.head.indexOf(pre)===0){last=e;break;}}return targetBpm(ed.curBpm,ed.curStreak,last);}
+function lastEngTsBeforeToday(k,n){var pre="Key of "+k+" \u00b7 Eng "+n+" ",tk=todayKey();for(var i=0;i<state.log.length;i++){var e=state.log[i];if(e.type==="engine"&&e.dayKey!==tk&&e.head&&e.head.indexOf(pre)===0)return e.ts||0;}return 0;}
+function stalestEng(k,list,count){
+  return list.slice().sort(function(a,b){var d=lastEngTsBeforeToday(k,a)-lastEngTsBeforeToday(k,b);return d!==0?d:a-b;}).slice(0,count);
+}
+function maintTasks(){
+  var dow=curDow(),isG=(dow!==2&&dow!==4&&dow!==6),t=[],K=isG?"G":"D";
+  if(isG){t.push({kind:"pair",k:"G",pn:"G\u2192C"},{kind:"pair",k:"G",pn:"Em\u2192G"});}
+  else{t.push({kind:"pair",k:"D",pn:"G\u2192A"},{kind:"pair",k:"D",pn:"A\u2192Em"});}
+  var slots=engineSlots(K),seen={};
+  slots.forEach(function(n){seen[n]=(seen[n]||0)+1;t.push({kind:"eng",k:K,n:n,occ:seen[n],of:slots.filter(function(x){return x===n;}).length});});
+  return t;
+}
+function weakestA(){
+  var tl=todayLogs();
+  for(var i=0;i<tl.length;i++){var e=tl[i];if(e.type==="pair"&&isAHead(e.head)&&(e.meta||"").indexOf("mostly clean")<0){var pn=e.head.split(" \u00b7 ")[1];if(A_PAIRS.indexOf(pn)>=0)return pn;}}
+  var best=A_PAIRS[0];
+  A_PAIRS.forEach(function(pn){var a=state.pairs.A[pn],b=state.pairs.A[best];if(a.curBpm<b.curBpm||(a.curBpm===b.curBpm&&a.curStreak<b.curStreak))best=pn;});
+  return best;
+}
+function budget(){
+  var w=0,a=0,m=0,s=0;
+  todayLogs().forEach(function(e){var sec=e.secs||0;
+    if(e.type==="warmup")w+=sec;
+    else if(e.type==="pair"&&isAHead(e.head))a+=sec;
+    else if(e.type==="pair"||e.type==="engine")m+=sec;
+    else if(e.type==="song")s+=sec;});
+  return {w:w,a:a,m:m,s:s};
+}
+
+/* ---------- v4: weekly plan, bands, range chips, pain stop ---------- */
+function flashToast(title,msg){
+  var el=document.getElementById("lockMsg");
+  if(!el){el=document.createElement("div");el.id="lockMsg";el.className="mustlog-toast";document.body.appendChild(el);}
+  el.innerHTML="<b>"+title+"</b><span>"+msg+"</span>";
+  el.classList.add("show");
+  clearTimeout(flashLockToast._t);
+  flashLockToast._t=setTimeout(function(){el.classList.remove("show");},3400);
+}
+/* weekly plan */
+function planStartMs(p){var a=p.weekOf.split("-");return new Date(+a[0],+a[1]-1,+a[2]).getTime();}
+function activePlan(){
+  var p=state.plan;if(!p||!p.weekOf)return null;
+  var s=planStartMs(p),n=new Date(),tm=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime();
+  return (tm>=s&&tm<s+7*86400000)?p:null;
+}
+function planBpmOverride(key){
+  var p=activePlan();if(!p||!p.bpm||p.bpm[key]==null)return null;
+  var s=planStartMs(p),parts=key.split("|"),isEng=/^\d+$/.test(parts[1]);
+  var pre=isEng?("Key of "+parts[0]+" \u00b7 Eng "+parts[1]+" "):("Key of "+parts[0]+" \u00b7 "+parts[1]);
+  for(var i=0;i<state.log.length;i++){
+    var e=state.log[i];if((e.ts||0)<s)break;
+    if(e.head&&(e.type==="pair"||e.type==="engine")){if(isEng?e.head.indexOf(pre)===0:e.head===pre)return null;}
+  }
+  return p.bpm[key];
+}
+function parsePlan(txt){
+  var o;try{o=JSON.parse(txt);}catch(err){return {err:"That is not valid JSON. Paste the plan block exactly as sent."};}
+  if(!o||o.v!==1)return {err:"The plan needs \"v\":1 at the top."};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(o.weekOf||""))return {err:"weekOf must look like 2026-10-19."};
+  var c={v:1,weekOf:o.weekOf,note:String(o.note||"").slice(0,300)};
+  if(o.bpm&&typeof o.bpm==="object"){c.bpm={};Object.keys(o.bpm).forEach(function(k0){var k=k0.replace(/->/g,"\u2192"),v=+o.bpm[k0];if(v>=20&&v<=250&&/^[A-Z]\|.+$/.test(k))c.bpm[k]=Math.round(v);});}
+  if(o.engines&&typeof o.engines==="object"){c.engines={};["G","D"].forEach(function(k){if(Array.isArray(o.engines[k]))c.engines[k]=o.engines[k].map(Number).filter(function(n){return n>=1&&n<=8;}).slice(0,6);});}
+  if(o.songs&&typeof o.songs==="object"){c.songs={};Object.keys(o.songs).forEach(function(d){if(/^[0-6]$/.test(d)&&Array.isArray(o.songs[d]))c.songs[d]=o.songs[d].map(function(x){return String(x).slice(0,80);}).slice(0,8);});}
+  return {plan:c};
+}
+function renderPlanBox(){
+  var el=document.getElementById("planStatus");if(!el)return;
+  var p=state.plan;
+  if(!p||!p.weekOf){el.className="lockbanner";el.textContent="No weekly plan applied. The card uses its defaults until your tutor's plan is pasted here.";return;}
+  var s=new Date(planStartMs(p)),a=activePlan(),lab=s.getDate()+" "+MONTHS[s.getMonth()];
+  if(a){el.className="lockbanner open";el.textContent="Plan active: week of "+lab+(p.note?" \u00b7 "+p.note:"");}
+  else{el.className="lockbanner";el.textContent="The plan for the week of "+lab+" is not active today. Defaults are in use; ask for the next plan.";}
+}
+function engineSlots(k){
+  var pl=activePlan(),out=[],i;
+  if(pl&&pl.engines&&pl.engines[k]&&pl.engines[k].length)out=pl.engines[k].slice(0,6);
+  if(out.length<6){
+    var eg=state.engines[k],all=[1,2,3,4,5,6,7,8];
+    var uncl=all.filter(function(n){return eg[n]&&eg[n].bestPassed===0&&(k==="D"?n>=5:true);});
+    var fill=[];
+    if(!out.length){
+      var focus=stalestEng(k,uncl,k==="G"?1:2);
+      focus.forEach(function(n){fill.push(n,n,n);});
+    }
+    var used=fill.concat(out);
+    var others=stalestEng(k,all.filter(function(n){return used.indexOf(n)<0;}),8);
+    out=out.concat(fill);
+    for(i=0;i<others.length&&out.length<6;i++)out.push(others[i]);
+  }
+  return out.slice(0,6);
+}
+/* bands */
+function bandFor(kind,bpm,secs){
+  var min=secs/60,cm,line;
+  if(kind==="song"){cm=(min<=6)?2:3;line=Math.floor(1.7*min);}
+  else if(kind==="wu"){cm=3;line=10;}
+  else{cm=(secs<=120)?2:3;line=Math.round(bpm*0.1*min);}
+  if(line<=cm)line=cm+1;
+  return {c:cm,h:line};
+}
+function bandLabels(b){return {clean:"0-"+b.c,half:(b.c+1)+"-"+b.h,sloppy:(b.h+1)+"+"};}
+function bandText(kind,bpm,secs){var l=bandLabels(bandFor(kind,bpm,secs));return "clean "+l.clean+" \u00b7 half "+l.half+" \u00b7 sloppy "+l.sloppy;}
+function rangeLabel(kind,bpm,secs,raw){if(raw==="lost")return "lost";return bandLabels(bandFor(kind,bpm,secs))[raw];}
+function chipsHTML(attr,key,cur,bandAttrs){
+  var defs=[["clean","Mostly clean"],["half","About half"],["sloppy","Sloppy"],["lost","Lost count"]],h='<div class="honest four" '+bandAttrs+'>';
+  defs.forEach(function(d){h+='<button class="'+d[0]+(cur===d[0]?' sel':'')+'" '+attr+'="'+key+'" data-v="'+d[0]+'"><span>'+d[1]+'</span><small data-bb="'+d[0]+'">'+(d[0]==="lost"?'= half':'')+'</small></button>';});
+  return h+'</div><div class="chipnote">Count mistakes live. Tap the range that matches. Lost count is recorded as About half.</div>';
+}
+function refreshBandChips(){
+  var els=document.querySelectorAll("[data-bkind]");
+  for(var i=0;i<els.length;i++){
+    var el=els[i],kind=el.getAttribute("data-bkind"),tid=el.getAttribute("data-bandfor"),secs=+el.getAttribute("data-bsecs")||0,bpm=+el.getAttribute("data-bbpm")||0;
+    if(tid&&timers[tid]){secs=timers[tid].total;bpm=timers[tid].bpmAtStop||metroBpm;}
+    var b=bandLabels(bandFor(kind,bpm,secs));
+    var c=el.querySelector('[data-bb="clean"]'),h=el.querySelector('[data-bb="half"]'),s=el.querySelector('[data-bb="sloppy"]');
+    if(c)c.textContent=b.clean;if(h)h.textContent=b.half;if(s)s.textContent=b.sloppy;
+  }
+}
+/* songs chosen for today */
+function songRunsToday(sg){var tk=todayKey();return state.log.filter(function(e){return e.type==="song"&&e.songId===sg.id&&e.dayKey===tk;}).length;}
+function songLastTsBeforeToday(sg){var tk=todayKey();for(var i=0;i<state.log.length;i++){var e=state.log[i];if(e.type==="song"&&e.songId===sg.id&&e.dayKey!==tk)return e.ts||0;}return 0;}
+function songPlanToday(){
+  var pl=activePlan(),dow=curDow(),list=[],songs=state.songs||[];
+  var names=(pl&&pl.songs&&pl.songs[String(dow)])||null;
+  if(names&&names.length){
+    names.forEach(function(nm){
+      var q=String(nm).toLowerCase();
+      var s=songs.find(function(x){return (x.name||"").toLowerCase()===q;})||songs.find(function(x){return (x.name||"").toLowerCase().indexOf(q)>=0;});
+      if(s&&list.indexOf(s)<0)list.push(s);
+    });
+  }
+  if(!list.length){
+    var cand=songs.filter(function(s){return (s.mins||0)>0;}).sort(function(a,b){
+      var la=a.status==="learning"?0:1,lb=b.status==="learning"?0:1;if(la!==lb)return la-lb;
+      return songLastTsBeforeToday(a)-songLastTsBeforeToday(b);});
+    var tot=0;cand.forEach(function(s){if(tot<PLAN.songMin){list.push(s);tot+=s.mins;}});
+  }
+  return list.map(function(s){return {song:s,done:songRunsToday(s)>0};});
+}
+var songMark={};
+/* storage and backup line */
+function backupAgeDays(){var lb=state.lastBackup;if(!lb)return null;return Math.floor((Date.now()-lb)/86400000);}
+
+/* ---- Today card ---- */
+function titem(done,txt,sub,btn){return '<div class="titem'+(done?' done':'')+'"><span class="ck">'+(done?'\u2713':'')+'</span><span class="tx">'+txt+(sub?'<span class="sub">'+sub+'</span>':'')+'</span>'+(btn||'')+'</div>';}
+function tgoBtn(attr,label){return '<button class="tgo" '+attr+'>'+(label||'Go')+'</button>';}
+function budRow(label,haveSec,planMin){
+  var pct=planMin>0?Math.min(100,Math.round(haveSec/(planMin*60)*100)):(haveSec>0?100:0);
+  var over=planMin>0&&haveSec>planMin*60;
+  return '<div class="bud"><div class="bud-top"><span>'+label+'</span><span class="mono">'+Math.round(haveSec/60)+' / '+planMin+' min</span></div><div class="bud-bar"><i class="'+(over?'over':'')+'" style="width:'+pct+'%"></i></div></div>';
+}
+function renderToday(){
+  var el=document.getElementById("today");if(!el)return;
+  var st=dayStatus(),m=dayMode(),dow=curDow(),isG=(dow!==2&&dow!==4&&dow!==6),core=st.core,t=st.t,bd=budget();
+  var h='';
+  h+='<div class="thead"><b>'+DOW_NAMES[dow]+' \u00b7 '+(dow===0?'light day':(isG?'G day':'D day'))+'</b><span class="tmode">'+(m==="short"?'SHORT DAY':(m==="rest"?'HANDS REST':'NORMAL'))+'</span></div>';
+  h+='<div class="tmodes three"><button data-tmode="short" class="'+(m==="short"?'on':'')+'">Short day</button><button data-tmode="rest" class="'+(m==="rest"?'on':'')+'">Hands rest day</button><button data-tpain="1" class="pain">Pain: stop</button></div>';
+  h+='<div class="tnote">Pain or an index flare? Tap Pain: stop. It logs a note and switches today to Hands rest day. Tap a mode again to return to normal.</div>';
+  var pl=activePlan();
+  if(pl&&pl.note)h+='<div class="tstatus"><b>Plan:</b> '+escapeHtml(pl.note)+'</div>';
+  if(st.complete){
+    h+='<div class="tstatus met"><b>Today\'s target is met.</b> Free practice and extra drills are open. Anything more is extra for you.</div>';
+  } else {
+    var nxt=!core.complete?("Warm-up core ("+core.remaining+" left)"):(!st.aMet?("Key A block ("+st.a.count+"/"+t.aN+" sessions)"):(!st.mMet?("Maintenance ("+Math.max(0,Math.ceil((t.maintSec-st.m.sec)/60))+" min left)"):(t.songSec===1?"Songs (1 run-through)":"Songs ("+Math.max(0,Math.ceil((t.songSec-st.s.sec)/60))+" min left)")));
+    h+='<div class="tstatus">Next: <b>'+nxt+'</b></div>';
+  }
+  var tsec=timedSecsToday(),counted=(state.lastDay===todayKey());
+  h+='<div class="tstatus'+(counted?' met':'')+'">'+(counted?'<b>Streak day counted.</b> '+Math.round(tsec/60)+' min logged today.':'Streak day: <b>'+Math.floor(tsec/60)+' / '+(STREAK_SEC/60)+' min</b> logged. '+Math.max(0,Math.ceil((STREAK_SEC-tsec)/60))+' min to go.')+'</div>';
+  var wPlan=core.short?4:(core.sqReq?PLAN.warmMin:PLAN.warmMin-2);
+  if(m==="normal"){
+    var amMin=PLAN.warmMin+t.aN*3,pmMin=Math.round(t.maintSec/60)+PLAN.songMin;
+    h+='<div class="tnote2" style="margin:0 0 8px">Today about '+(amMin+pmMin)+' min. Split it if you like: morning = '+(t.aN>0?'blocks 1-2':'block 1')+' (about '+amMin+' min), evening = blocks 3-4 (about '+pmMin+' min). Keep the order. Stop at any pain.</div>';
+  }
+  h+=budRow("Warm-up core",bd.w,wPlan);
+  h+=budRow("Key A",bd.a,t.aN*3);
+  h+=budRow("Maintenance",bd.m,Math.round(t.maintSec/60));
+  h+=budRow("Songs",bd.s,PLAN.songMin);
+
+  /* block 1: warm-up core */
+  var order=core.short?[0]:[0].concat(core.nIdx,core.rIdx,[8,9]);
+  var b1='<div class="tblock-h"><b>1 \u00b7 Warm-up core</b><span>'+(core.complete?'done':core.remaining+' left')+'</span></div>';
+  if(core.pick)b1+='<div class="tnote2" style="margin:0 0 4px">Light day: pick 1 ninja pair and any 2 rubber-stamp strings.</div>';
+  order.forEach(function(i){var w=WARMUPS[i],kd=(i===8||i===9)?"sw":"wu",bp=WU_TARGET[i]||0;b1+=titem(core.done(i),w.name,fmt(w.sec)+(bp?' \u00b7 '+bp+' BPM':'')+'<span class="bandline">'+bandText(kd,bp,w.sec)+'</span>','');});
+  if(core.sqReq)b1+=titem(core.sqDone,SQ_NAME,'2:00 \u00b7 timer in the Warm-up section \u00b7 required \u00b7 no mark','');
+  else b1+='<div class="tnote2">Hands rest day: the squeeze walk is skipped to protect the index.</div>';
+  if(core.short)b1+='<div class="tnote2">Short day (10 minutes): 1-2-3-4, squeeze timer, 1 Key A session, 1 song run-through.</div>';
+  h+='<div class="tblock'+(core.complete?' done':'')+'">'+b1+'</div>';
+
+  /* block 2: Key A */
+  var b2;
+  if(t.aN===0){
+    b2='<div class="tblock-h"><b>2 \u00b7 Key A</b><span>skipped today</span></div><div class="tnote2" style="margin:0">'+(m==="rest"?'Hands rest day: switch sessions are locked.':'Light day: no Key A block. Key A stays open if you want it.')+'</div>';
+  } else {
+    b2='<div class="tblock-h"><b>2 \u00b7 Key A \u00b7 '+t.aN+' \u00d7 3:00 \u00b7 pattern L2</b><span>'+st.a.count+'/'+t.aN+'</span></div>';
+    if(m==="short")b2+='<div class="tnote2" style="margin:0 0 4px">Short day: 1 session counts. Pick any pair.</div>';
+    var pairsDone={};
+    todayLogs().forEach(function(e){if(e.type==="pair"&&isAHead(e.head)&&(e.secs||0)>=MIN_SEC)pairsDone[e.head]=(pairsDone[e.head]||0)+1;});
+    var covered=0;
+    A_PAIRS.forEach(function(pn){
+      var pd=state.pairs.A[pn],tg=pairTarget("A",pn),dn=(pairsDone["Key of A \u00b7 "+pn]||0)>0;
+      if(dn)covered++;
+      b2+=titem(dn,pn,tg+' BPM \u00b7 L2 \u00b7 now '+pd.curStreak+'/'+UNLOCK_STREAK+' @ '+pd.curBpm+'<span class="bandline">'+bandText("sw",tg,180)+'</span>',tgoBtn('data-tgo="pair|A|'+pn+'|'+tg+'"'));
+    });
+    if(m!=="short"){
+      var weak=weakestA(),reps=Math.max(0,Math.min(3,st.a.count-covered)),wtg=pairTarget("A",weak);
+      b2+=titem(reps>=3,'Repeat the weakest pair: '+weak,reps+'/3 repeats \u00b7 '+wtg+' BPM \u00b7 L2<span class="bandline">'+bandText("sw",wtg,180)+'</span>',tgoBtn('data-tgo="pair|A|'+weak+'|'+wtg+'"'));
+    }
+    b2+='<div class="tnote2">After 3 clean at the same BPM go +2. A failed pass: drop 2. Mark honestly, lower mark when torn.</div>';
+  }
+  h+='<div data-blk="2" class="tblock'+(t.aN>0&&st.aMet?' done':'')+'">'+b2+'</div>';
+
+  /* block 3: maintenance and engines */
+  var b3;
+  if(t.maintSec===0){
+    b3='<div class="tblock-h"><b>3 \u00b7 Maintenance</b><span>skipped today</span></div><div class="tnote2" style="margin:0">'+(m==="rest"?'Hands rest day.':'Short day: maintenance is optional.')+'</div>';
+  } else {
+    b3='<div class="tblock-h"><b>3 \u00b7 '+(isG?'G':'D')+' maintenance and engines \u00b7 8 \u00d7 2:00</b><span>'+Math.round(st.m.sec/60)+' / '+Math.round(t.maintSec/60)+' min</span></div>';
+    var tl3=todayLogs();
+    maintTasks().forEach(function(tk){
+      var dn,label,sub,go;
+      if(tk.kind==="pair"){
+        var hd="Key of "+tk.k+" \u00b7 "+tk.pn,tg=pairTarget(tk.k,tk.pn);
+        dn=tl3.some(function(e){return e.type==="pair"&&e.head===hd&&(e.secs||0)>=MIN_SEC_MAINT;});
+        label=tk.k+' \u00b7 '+tk.pn+' switch check';sub=tg+' BPM \u00b7 L2 \u00b7 2:00<span class="bandline">'+bandText("sw",tg,120)+'</span>';go='data-tgo="pair|'+tk.k+'|'+tk.pn+'|'+tg+'"';
+      } else {
+        var pre="Key of "+tk.k+" \u00b7 Eng "+tk.n+" ",tg2=engTarget(tk.k,tk.n),en=ENGINES[tk.n-1];
+        var cnt=tl3.filter(function(e){return e.type==="engine"&&e.head&&e.head.indexOf(pre)===0&&(e.secs||0)>=MIN_SEC_MAINT;}).length;
+        dn=cnt>=tk.occ;
+        label=tk.k+' engine '+tk.n+' \u00b7 '+en.name+(tk.of>1?' ('+tk.occ+' of '+tk.of+')':'');sub=tg2+' BPM \u00b7 2:00 \u00b7 '+en.sig+'<span class="bandline">'+bandText("sw",tg2,120)+'</span>';go='data-tgo="eng|'+tk.k+'|'+tk.n+'|'+tg2+'"';
+      }
+      b3+=titem(dn,label,sub,tgoBtn(go));
+    });
+  }
+  h+='<div data-blk="3" class="tblock'+(t.maintSec>0&&st.mMet?' done':'')+'">'+b3+'</div>';
+
+  /* block 4: songs chosen for today */
+  var songReq=t.songSec>0,sl=songPlanToday();
+  var b4='<div class="tblock-h"><b>4 \u00b7 Songs \u00b7 '+(songReq?'required':'optional today')+'</b><span>'+(t.songSec===1?(st.sMet?'1 run done':'1 run-through'):Math.round(st.s.sec/60)+' / '+PLAN.songMin+' min')+'</span></div>';
+  if(!sl.length)b4+=titem(false,'Add songs in Repertoire to get a daily list','','');
+  sl.forEach(function(x){var sg=x.song;b4+=titem(x.done,escapeHtml(sg.name),round1(sg.mins||0)+' min \u00b7 '+escapeHtml(String(sg.key||'?'))+'<span class="bandline">'+bandText("song",0,Math.round((sg.mins||0)*60))+'</span>','');});
+  b4+='<div class="tnote2">'+(st.open123?'Open':'Unlocks after blocks 1-3')+' \u00b7 pick a chip, then tap "+ practiced" in Repertoire after each run.</div>';
+  h+='<div data-blk="4" class="tblock'+((songReq&&st.sMet)?' done':'')+'">'+b4+'</div>';
+
+  /* weekly */
+  if(dow===6||dow===3){
+    var wk='<div class="tblock-h"><b>This week</b><span>'+DOW_NAMES[dow]+'</span></div>';
+    if(dow===6){
+      var sp={};todayLogs().forEach(function(e){if(e.type==="sprint"&&isAHead(e.head))sp[e.head]=1;});
+      var spn=Object.keys(sp).length;
+      wk+=titem(spn>=4,'Sprint every Key A pair once',spn+'/4 \u00b7 60 s each, no metronome \u00b7 open a pair in Keys','');
+    } else {
+      var bp=blindPair();
+      wk+=titem(tickOn("blind"),'Blind check: record your first '+bp+' session','voice memo for the full 3:00 \u00b7 recount blind \u00b7 use the higher count',tgoBtn('data-ttick="blind"',tickOn("blind")?'Undo':'Tick'));
+    }
+    h+='<div class="tblock">'+wk+'</div>';
+  }
+  /* storage and backup */
+  var bd2=backupAgeDays(),due=(bd2===null||bd2>=3);
+  h+='<div class="tstatus'+(due?' warn':'')+'">'+(bd2===null?'No backup yet.':'Last backup: '+(bd2===0?'today':bd2+' day'+(bd2===1?'':'s')+' ago')+'.')+(due?' Back up now.':'')+' <button class="tgo" data-tbackup="1">Back up</button><br><span class="sub" style="font-size:10.5px">Storage: '+(window._persist===true?'protected by the browser':(window._persist===false?'not protected, the browser may clear it, so back up weekly':'checking'))+'</span></div>';
+  h+='<div class="tnote2">Anything beyond the four blocks is extra for you.</div>';
+  el.innerHTML=h;
+  var blk=!core.complete?null:((!st.aMet&&t.aN>0)?"2":((!st.mMet&&t.maintSec>0)?"3":null));
+  if(blk){var nx=el.querySelector('[data-blk="'+blk+'"] .titem:not(.done) .tgo[data-tgo]');if(nx)nx.closest(".titem").classList.add("next");}
+}
+
+function renderLocks(){
+  var st=dayStatus(),m=dayMode();
+  var kl=document.getElementById("keysLock");
+  if(kl){
+    var cls="lockbanner",tx;
+    if(m==="rest"){tx="Hands rest day: switch and engine sessions are locked today. Chord checks stay open.";}
+    else if(!st.core.complete){tx="Locked until the warm-up core is done ("+st.core.remaining+" left).";}
+    else if(!st.aMet){tx="Key A is open. Other keys open after the Key A block ("+st.a.count+"/"+st.t.aN+" sessions).";cls+=" part";}
+    else{tx="Open. All keys available.";cls+=" open";}
+    kl.className=cls;kl.textContent=tx;
+  }
+  var sl=document.getElementById("songsLock");
+  if(sl){
+    if(!st.open123){sl.className="lockbanner";sl.textContent="Songs unlock after the warm-up core, the Key A block and maintenance are done.";}
+    else if(!st.sMet){sl.className="lockbanner part";sl.textContent="Songs are open and required today: "+Math.round(st.s.sec/60)+" / "+PLAN.songMin+" min.";}
+    else{sl.className="lockbanner open";sl.textContent="Open. Today's target is met.";}
+  }
+  ["freeMin","freeNote","freeLog"].forEach(function(id){var x=document.getElementById(id);if(x)x.disabled=!st.complete;});
+  var fl=document.getElementById("freeLockNote");if(fl)fl.textContent=st.complete?"Counts toward minutes today. Never touches streaks or gates.":"Free practice unlocks after today's target is met, songs included.";
+}
+function warmSignature(){var st=dayStatus();return (st.complete?"x":(st.core.complete?"c":"p"))+"|"+(st.core.complete?"":st.core.pool.join(","))+"|"+(st.core.sqReq?"s":"n");}
+function renderDaily(){renderToday();renderLocks();if(warmSignature()!==_warmSig)renderWarmup();}
+function gotoTask(s){
+  bpmManual=false;
+  var p=s.split("|"),kind=p[0],k=p[1];
+  var kd=document.getElementById("keysDetails");if(kd)kd.open=true;
+  openKey[k]=true;
+  if(kind==="pair"){openPair[k]=p[2];if(!activeTimerId){setBpm(+p[3]);setSig("4/4");}}
+  else{var n=+p[2];openEng[k]=n;if(!activeTimerId){setBpm(+p[3]);setSig(ENGINES[n-1].sig);}}
+  renderKeys();
+  try{var q=(kind==="pair")?'[data-pairtoggle="'+k+"|"+p[2]+'"]':'[data-engtoggle="'+k+"|"+p[2]+'"]';var el=document.querySelector(q);if(el&&el.scrollIntoView)el.scrollIntoView({behavior:"smooth",block:"center"});}catch(err){}
+}
+document.getElementById("today").addEventListener("click",function(e){
+  var t;
+  if((t=e.target.closest("[data-tmode]"))){
+    var mm=t.getAttribute("data-tmode");
+    if(dayMode()===mm){setDayMode("normal");return;}
+    var msg=(mm==="short")?"Switch to Short day? Today becomes a 10-minute day: 1-2-3-4, the squeeze timer, 1 Key A session and 1 song run-through.":"Switch to Hands rest day? Today's target is the warm-up core without the squeeze walk. Switch and engine sessions stay locked and songs are optional.";
+    if(!window.confirm(msg))return;
+    setDayMode(mm);return;
+  }
+  if((t=e.target.closest("[data-tpain]"))){
+    if(!window.confirm("Stop for pain? This logs a pain note and switches today to Hands rest day."))return;
+    try{if(activeTimerId&&timers[activeTimerId]&&timers[activeTimerId].run)startTimerById(activeTimerId);}catch(err){}
+    pushLog({type:"pain",head:"Pain stop",meta:"stopped for pain \u00b7 switched to Hands rest day",secs:0});
+    setDayMode("rest");renderLog();return;
+  }
+  if((t=e.target.closest("[data-tbackup]"))){exportBackup();return;}
+  if((t=e.target.closest("[data-ttick]"))){tickToggle(t.getAttribute("data-ttick"));renderToday();return;}
+  if((t=e.target.closest("[data-tgo]"))){gotoTask(t.getAttribute("data-tgo"));return;}
+});
+document.getElementById("freeLog").onclick=function(){
+  var st=dayStatus();
+  if(!st.complete){flashLockToast("Free practice unlocks after today's target is met.");return;}
+  var mEl=document.getElementById("freeMin"),nEl=document.getElementById("freeNote");
+  var mv=parseInt(mEl.value,10);
+  if(isNaN(mv)||mv<1||mv>300){mEl.focus();return;}
+  var note=escapeHtml((nEl.value||"").trim().slice(0,80));
+  pushLog({type:"free",head:"Free practice",meta:(note?note+" \u00b7 ":"")+mv+" min \u00b7 self-reported",secs:mv*60});
+  mEl.value="";nEl.value="";
+  renderLog();renderWeek();renderStreak();
+};
+
+/* ---------- keys render ---------- */
+var lastUnlockState={};
+var sprintInputDrafts={};
+function saveSprintInputDrafts(){
+  document.querySelectorAll('input.sprint-input').forEach(function(inp){
+    if(inp.value!=="") sprintInputDrafts[inp.id]=inp.value;
+  });
+}
+function restoreSprintInputDrafts(){
+  Object.keys(sprintInputDrafts).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.value=sprintInputDrafts[id];
+  });
+}
+var openPair={};   // keyId -> pairName currently open
+var openEng={};    // keyId -> engNum currently open
+var openKey={};    // keyId -> bool; whether the whole key card is expanded (default open)
+var honestMark={}; // keyId|pair -> mark (transient, this session)
+
+function renderKeys(){
+  var c=document.getElementById("keys"),h="";
+  KEYS.forEach(function(k){
+    var g1done=chordsAllClean(k.id);
+    var g3open=enginesUnlocked(k.id);
+    var pairs=pairsForKey(k);
+    var allPairsPassed=pairs.every(function(pn){return pairPassed(k.id,pn);});
+
+    // GATE 1 chords
+    var chordsH="";
+    k.loop.forEach(function(ch){
+      var clean=state.chords[k.id][ch]===true;
+      chordsH+='<div class="chordcell'+(clean?" clean":"")+'" data-chord="'+k.id+"|"+ch+'">'+
+        '<div class="nm">'+ch+'</div><div class="fr">'+CHORDS[ch]+'</div>'+
+        '<div class="mk">'+(clean?"\u2713 clean":"tap if clean")+'</div></div>';
+    });
+    var g1 = '<div class="gate '+(g1done?"done":"")+'">'+
+      '<div class="gate-head"><span class="gate-num">'+(g1done?"\u2713":"1")+'</span><span class="gate-title">Chords clean?</span><span class="gate-status">'+(g1done?"all clean":"tap each clean chord")+'</span></div>'+
+      '<div class="gate-body"><div class="chordgrid">'+chordsH+'</div></div></div>';
+
+    // GATE 2 switches
+    var keyUnlocked=enginesUnlocked(k.id);
+    var minSec=keyUnlocked?MIN_SEC_MAINT:MIN_SEC;
+    var minTxt=keyUnlocked?"2:00":"3:00";
+    var pairsH="";
+    pairs.forEach(function(pn){
+      var pd=state.pairs[k.id][pn];
+      var passed=pairPassed(k.id,pn);
+      var isOpen=openPair[k.id]===pn;
+      var hm=honestMark[k.id+"|"+pn]||null;
+      var pips="";for(var s=0;s<UNLOCK_STREAK;s++){pips+='<span class="pip'+(s<pd.curStreak?" on":"")+'"></span>';}
+      var tid="sw-"+k.id+"-"+pn.replace(/[^A-Za-z0-9]/g,"");
+      makeTimer(tid,minSec,{sig:"4/4"});
+      // when a key's unlock state flips, reset idle switch timers to the new mode default (once)
+      if(lastUnlockState[k.id]!==keyUnlocked && timers[tid] && !timers[tid].run){ timers[tid].total=minSec; timers[tid].left=minSec; }
+      var lastB=lastBpmFor("pair","Key of "+k.id+" \u00b7 "+pn);
+      var bestTxt = pd.bestPassed>0 ? ("Best passed: <b>"+pd.bestPassed+" BPM</b>") : "Not yet passed at any speed";
+      var bonusTxt="";[1,3,4].forEach(function(bn){if(pd.bonus&&pd.bonus[bn])bonusTxt+=" \u00b7 L"+bn+" best "+pd.bonus[bn];});
+      var plv=pairLevel[k.id+"|"+pn]||pd.lastLevel||GATE_LEVEL;
+      var tmP=timers[tid];var lvLocked=!!(tmP&&(tmP.run||tmP.elapsed>0||tmP.completed));
+      var lvlHTML='<div class="lvlrow"><div class="lvl-lbl">Strum pattern \u00b7 pick before you start \u00b7 the gate counts at L2'+(lvLocked?' \u00b7 locked, reset the timer to change':'')+'</div><div class="lvlchips">';
+      [1,2,3,4].forEach(function(ln){lvlHTML+='<button class="lvl'+(plv===ln?' sel':'')+(lvLocked?' dis':'')+'" data-lvl="'+k.id+'|'+pn+'|'+ln+'">L'+ln+'<small>'+LEVELS[ln].s+'</small></button>';});
+      lvlHTML+='</div></div>';
+      var sprintTid="sp-"+k.id+"-"+pn.replace(/[^A-Za-z0-9]/g,"");
+      makeTimer(sprintTid,60,{noMetro:true}); // no sig/bpm forcing - sprint runs free of the metronome
+      var sMark=honestMark["sprint|"+k.id+"|"+pn]||null;
+      var sBestTxt = pd.sprintBest>0 ? (pd.sprintBest+" switches \u00b7 set "+(pd.sprintDate||"")+(pd.sprintMark?(" \u00b7 "+labelOf(pd.sprintMark)):"")) : "No attempts yet";
+      var body="";
+      if(isOpen){
+        var instr = keyUnlocked
+          ? ('Maintenance mode \u2014 engines are open for this key. Keep '+pn+' warm. Min <b>'+minTxt+'</b> per session, '+UNLOCK_STREAK+' clean in a row still holds the streak.')
+          : ('Play <b>'+pn+'</b> one switch per beat, continuously. Min <b>'+minTxt+'</b> to count. A streak is tracked per BPM and per pattern level \u2014 change the metronome or the level and the streak restarts. Need <b>'+UNLOCK_STREAK+' clean in a row at the same BPM</b>, at <b>'+UNLOCK_BPM+'+</b> at pattern <b>L2</b> to unlock engines.');
+        body='<div class="pairitem-body">'+
+          '<div class="pair-instr">'+instr+'</div>'+
+          '<div class="lastbox">'+(lastB?"Last session: <b>"+lastB+" BPM</b> \u00b7 ":"")+bestTxt+bonusTxt+'</div>'+
+          '<div class="streak-now">Streak now: <b>'+pd.curStreak+"/"+UNLOCK_STREAK+'</b> at <b>'+pd.curBpm+' BPM'+(pd.curLevel?' \u00b7 L'+pd.curLevel:' \u00b7 level not set yet')+'</b></div>'+
+          lvlHTML+
+          '<div class="pair-ctrl" style="justify-content:flex-end">'+
+            timerHTML(tid,minSec)+
+          '</div>'+
+          chipsHTML("data-pmark",k.id+"|"+pn,hm,'data-bkind="sw" data-bandfor="'+tid+'"')+
+          '<div style="text-align:right;margin-top:10px"><button class="savebtn" data-savefor="'+tid+'" data-psave="'+k.id+"|"+pn+'"'+((hm&&timers[tid]&&timers[tid].completed)?"":" disabled")+'>Log session</button></div>'+
+          '<div class="minnote">Logs the metronome BPM showing when you stop. Must run '+minTxt+'+ to count toward streak.</div>'+
+          '<div class="sprint-box">'+
+            '<div class="sprint-lbl">Switch-count sprint \u00b7 1:00 fixed \u00b7 no metronome</div>'+
+            '<div class="sprint-best">Best: <b>'+sBestTxt+'</b></div>'+
+            '<div class="sprint-row">'+
+              timerHTML(sprintTid,60)+
+              '<input type="number" inputmode="numeric" min="0" class="sprint-input" id="spin-'+sprintTid+'" placeholder="count">'+
+            '</div>'+
+            '<div class="honest" style="margin-top:8px">'+
+              '<button class="clean'+(sMark==="clean"?" sel":"")+'" data-smark="'+k.id+"|"+pn+'" data-v="clean">Mostly clean</button>'+
+              '<button class="half'+(sMark==="half"?" sel":"")+'" data-smark="'+k.id+"|"+pn+'" data-v="half">About half</button>'+
+              '<button class="sloppy'+(sMark==="sloppy"?" sel":"")+'" data-smark="'+k.id+"|"+pn+'" data-v="sloppy">Sloppy</button>'+
+            '</div>'+
+            '<div style="text-align:right;margin-top:8px"><button class="savebtn" data-savefor="'+sprintTid+'" data-spsave="'+k.id+"|"+pn+'"'+((timers[sprintTid]&&timers[sprintTid].completed)?"":" disabled")+'>Save count</button></div>'+
+          '</div>'+
+        '</div>';
+      }
+      var headTag;
+      if(passed){headTag='<span class="pairitem-bpm">best '+pd.bestPassed+'</span>';}
+      else if(pd.curStreak>0){headTag='<span class="pairitem-bpm dim">'+pd.curStreak+'/'+UNLOCK_STREAK+' @ '+pd.curBpm+'</span>';}
+      else if(lastB){headTag='<span class="pairitem-bpm dim">last '+lastB+'</span>';}
+      else {headTag='';}
+      pairsH+='<div class="pairitem'+(passed?" passed":"")+(isOpen?" open":"")+'">'+
+        '<div class="pairitem-head" data-pairtoggle="'+k.id+"|"+pn+'">'+
+          '<span class="pairitem-name">'+pn+'</span>'+
+          '<span class="streak-pips">'+pips+'</span>'+
+          headTag+
+        '</div>'+body+'</div>';
+    });
+    var g2locked=!g1done;
+    var g2 = '<div class="gate '+(allPairsPassed?"done":"")+(g2locked?" locked":"")+'">'+
+      '<div class="gate-head"><span class="gate-num">'+(allPairsPassed?"\u2713":"2")+'</span><span class="gate-title">Clean switches</span><span class="gate-status">'+(g2locked?"locked":(allPairsPassed?"all passed":"play each pair"))+'</span></div>'+
+      '<div class="gate-body"><div class="pairlist">'+pairsH+'</div></div></div>';
+
+    // GATE 3 engines
+    var engH="";
+    ENGINES.forEach(function(en){
+      var isOpen=openEng[k.id]===en.n;
+      var ed=state.engines[k.id][en.n];
+      var tid="eng-"+k.id+"-"+en.n;
+      makeTimer(tid,ENG_SEC,{sig:en.sig});
+      var ehm=honestMark["eng|"+k.id+"|"+en.n]||null;
+      var epips="";for(var es=0;es<UNLOCK_STREAK;es++){epips+='<span class="pip'+(es<ed.curStreak?" on":"")+'"></span>';}
+      var ebestTxt = ed.bestPassed>0 ? ("Best clean: <b>"+ed.bestPassed+" BPM</b>") : "Not yet cleared at any speed";
+      var body="";
+      if(isOpen){
+        body='<div class="eng-body">'+
+          '<div class="pattern">'+en.pat+'</div>'+
+          (en.note?'<div class="pattern-note">'+en.note+'</div>':'')+
+          '<div class="lastbox">'+ebestTxt+' \u00b7 set your strum speed on the metronome up top</div>'+
+          '<div class="streak-now">Streak now: <b>'+ed.curStreak+"/"+UNLOCK_STREAK+'</b> at <b>'+ed.curBpm+' BPM</b></div>'+
+          '<div class="eng-ctrl" style="justify-content:flex-end">'+
+            timerHTML(tid,ENG_SEC)+
+          '</div>'+
+          chipsHTML("data-emark",k.id+"|"+en.n,ehm,'data-bkind="sw" data-bandfor="'+tid+'"')+
+          '<div style="text-align:right;margin-top:10px"><button class="savebtn" data-savefor="'+tid+'" data-esave="'+k.id+"|"+en.n+"|"+en.name+'"'+((ehm&&timers[tid]&&timers[tid].completed)?"":" disabled")+'>Log session</button></div>'+
+          '<div class="minnote">3 clean in a row at the same BPM clears this engine at that speed. No BPM gate \u2014 climb freely.</div>'+
+        '</div>';
+      }
+      var eTag = ed.bestPassed>0 ? ('<span class="pairitem-bpm">best '+ed.bestPassed+'</span>') : (ed.curStreak>0?('<span class="pairitem-bpm dim">'+ed.curStreak+'/'+UNLOCK_STREAK+' @ '+ed.curBpm+'</span>'):'');
+      engH+='<div class="eng'+(isOpen?" open":"")+'">'+
+        '<div class="eng-head" data-engtoggle="'+k.id+"|"+en.n+'"><span class="eng-num">'+en.n+'</span><span class="eng-name">'+en.name+'</span><span class="streak-pips" style="margin-right:6px">'+epips+'</span>'+eTag+'<span class="eng-sig">'+en.sig+'</span></div>'+
+        body+'</div>';
+    });
+    var g3 = '<div class="gate '+(g3open?"":"locked")+'">'+
+      '<div class="gate-head"><span class="gate-num">3</span><span class="gate-title">Strum engines</span><span class="gate-status">'+(g3open?"all 8 open":"locked")+'</span></div>'+
+      '<div class="gate-body"><div class="engines">'+engH+'</div></div></div>';
+
+    // ----- collapsible key card (default collapsed) -----
+    var isKeyOpen = openKey[k.id]===true; // default closed; open on demand
+    // build a compact summary for the collapsed state
+    var phase = g3open ? "engines open" : g1done ? "switch phase" : "chord phase";
+    var passedCount = pairs.filter(function(pn){return pairPassed(k.id,pn);}).length;
+    var summaryBits = [];
+    if(!g1done){
+      var cleanC = k.loop.filter(function(ch){return state.chords[k.id][ch]===true;}).length;
+      summaryBits.push("chords "+cleanC+"/"+k.loop.length);
+    } else if(!g3open){
+      summaryBits.push("switches "+passedCount+"/"+pairs.length+" passed");
+    } else {
+      var engCleared = ENGINES.filter(function(en){return state.engines[k.id][en.n].bestPassed>0;}).length;
+      summaryBits.push("engines "+engCleared+"/"+ENGINES.length);
+    }
+    var keySummary = phase + " \u00b7 " + summaryBits.join(" \u00b7 ");
+
+    h+='<div class="kcard'+(isKeyOpen?" open":" closed")+'">'+
+      '<div class="kcard-head" data-keytoggle="'+k.id+'">'+
+        '<div class="kcard-head-l"><h3>Key of '+k.id+'</h3></div>'+
+        '<div class="kcard-head-r"><span class="kcard-summary">'+keySummary+'</span><span class="kcard-chev">'+(isKeyOpen?"\u25be":"\u25b8")+'</span></div>'+
+      '</div>'+
+      (isKeyOpen ? ('<div class="kcard-body">'+g1+g2+g3+'</div>') : '')+
+    '</div>';
+    lastUnlockState[k.id]=keyUnlocked;
+  });
+  c.innerHTML=h;
+}
+
+document.getElementById("keys").addEventListener("click",function(e){
+  var t;
+  if((t=e.target.closest("[data-lvl]"))){
+    var lv=t.getAttribute("data-lvl").split("|"),lk=lv[0],lpn=lv[1],ln=+lv[2];
+    var ltm=timers["sw-"+lk+"-"+lpn.replace(/[^A-Za-z0-9]/g,"")];
+    if(ltm&&(ltm.run||ltm.elapsed>0||ltm.completed)){flashLockToast("Pattern is locked once the timer starts. Reset the timer to change it.");return;}
+    pairLevel[lk+"|"+lpn]=ln;state.pairs[lk][lpn].lastLevel=ln;save();renderKeys();return;
+  }
+  if((t=e.target.closest("[data-keytoggle]"))){var kk=t.getAttribute("data-keytoggle");openKey[kk]=(openKey[kk]===true)?false:true;renderKeys();return;}
+  if((t=e.target.closest("[data-chord]"))){var parts=t.getAttribute("data-chord").split("|");var ki=parts[0],ch=parts[1];var was=state.chords[ki][ch];state.chords[ki][ch]=!was;if(!was){pushLog({type:"chord",head:"Key of "+ki+" \u00b7 "+ch,meta:"\u2713 clean"});}save();renderKeys();renderLog();return;}
+  if((t=e.target.closest("[data-pairtoggle]"))){var pv=t.getAttribute("data-pairtoggle").split("|");var pk=pv[0],pn=pv[1];openPair[pk]=openPair[pk]===pn?null:pn;renderKeys();return;}
+  if((t=e.target.closest("[data-pmark]"))){var mv=t.getAttribute("data-pmark");var mk=t.getAttribute("data-v");honestMark[mv]=honestMark[mv]===mk?null:mk;renderKeys();return;}
+  if((t=e.target.closest("[data-smark]"))){
+    var smv=t.getAttribute("data-smark");var smk=t.getAttribute("data-v");var smKey="sprint|"+smv;
+    honestMark[smKey]=honestMark[smKey]===smk?null:smk;
+    saveSprintInputDrafts(); // preserve any typed number before re-rendering wipes the input
+    renderKeys();
+    restoreSprintInputDrafts();refreshBandChips();
+    return;
+  }
+  if((t=e.target.closest("[data-spsave]"))){
+    var spv=t.getAttribute("data-spsave").split("|");var spk=spv[0],spn=spv[1];
+    var sprintTid="sp-"+spk+"-"+spn.replace(/[^A-Za-z0-9]/g,"");var stm=timers[sprintTid];
+    if(!stm||!stm.completed)return;
+    var inputEl=document.getElementById("spin-"+sprintTid);
+    var countVal=inputEl?parseInt(inputEl.value,10):NaN;
+    if(isNaN(countVal)||countVal<0){ if(inputEl)inputEl.focus(); return; }
+    var smark=honestMark["sprint|"+spk+"|"+spn]||null;
+    var pdSp=state.pairs[spk][spn];
+    var isNewBest = countVal>pdSp.sprintBest;
+    if(isNewBest){
+      pdSp.sprintBest=countVal;
+      var dnow=new Date();
+      pdSp.sprintDate=dnow.getDate()+" "+MONTHS[dnow.getMonth()];
+      pdSp.sprintMark=smark;
+    }
+    pushLog({type:"sprint",head:"Key of "+spk+" \u00b7 "+spn,meta:countVal+" switches in 1:00"+(smark?(" \u00b7 "+labelOf(smark)):"")+(isNewBest?" \u00b7 NEW BEST":""),secs:60,sprintCount:countVal,newBest:isNewBest});
+    stm.elapsed=0;stm.left=stm.total;stm.completed=false;
+    honestMark["sprint|"+spk+"|"+spn]=null;
+    if(inputEl)inputEl.value="";
+    delete sprintInputDrafts["spin-"+sprintTid];
+    save();renderKeys();renderLog();renderWeek();renderStreak();returnToToday();return;
+  }
+  if((t=e.target.closest("[data-psave]"))){
+    var sv=t.getAttribute("data-psave").split("|");var sk=sv[0],sn=sv[1];var rawMark=honestMark[sk+"|"+sn];if(!rawMark)return;var mark=(rawMark==="lost")?"half":rawMark;
+    var tid="sw-"+sk+"-"+sn.replace(/[^A-Za-z0-9]/g,"");var tm=timers[tid];if(!tm||!tm.completed)return;var secs=tm?tm.total:0;var pd=state.pairs[sk][sn];
+    var bpmv=(tm&&tm.bpmAtStop)?tm.bpmAtStop:metroBpm;
+    var maint=enginesUnlocked(sk);
+    var minReq=maint?MIN_SEC_MAINT:MIN_SEC;
+    var counts = secs>=minReq;
+    var lvl=pairLevel[sk+"|"+sn]||pd.lastLevel||GATE_LEVEL;
+    var gainNote=null;var advancedTo=null;
+    if(mark==="clean"&&counts){
+      var lvMatch=(pd.curLevel==null||pd.curLevel===lvl);
+      if(bpmv!==pd.curBpm||!lvMatch){
+        pd.curBpm=bpmv;pd.curLevel=lvl;pd.curStreak=1;gainNote="0\u21921 @ "+bpmv+" L"+lvl;
+      } else {
+        if(pd.curLevel==null)pd.curLevel=lvl;
+        var before=pd.curStreak;pd.curStreak=Math.min(UNLOCK_STREAK,pd.curStreak+1);
+        if(pd.curStreak>before)gainNote=before+"\u2192"+pd.curStreak+" @ "+bpmv+" L"+lvl;
+      }
+      if(pd.curStreak>=UNLOCK_STREAK){
+        if(lvl===GATE_LEVEL){
+          if(bpmv>pd.bestPassed){pd.bestPassed=bpmv;advancedTo="passed @ "+bpmv;}
+          else if(bpmv===pd.bestPassed){advancedTo="re-confirmed @ "+bpmv;}
+        } else {
+          if(!pd.bonus||typeof pd.bonus!=="object")pd.bonus={};
+          if(bpmv>(pd.bonus[lvl]||0)){pd.bonus[lvl]=bpmv;advancedTo="bonus L"+lvl+" @ "+bpmv;}
+          else if(bpmv===pd.bonus[lvl]){advancedTo="re-confirmed bonus L"+lvl+" @ "+bpmv;}
+        }
+      }
+    } else if(mark!=="clean"){
+      if(pd.curStreak>0)gainNote="reset @ "+pd.curBpm;
+      pd.curStreak=0;pd.curBpm=bpmv;pd.curLevel=lvl;
+    }
+    pd.lastLevel=lvl;
+    var tagTxt = maint ? " \u00b7 maintenance" : (counts?"":" \u00b7 <"+Math.round(minReq/60)+"min");
+    pushLog({type:"pair",head:"Key of "+sk+" \u00b7 "+sn,pairName:sk+" "+sn,meta:bpmv+" BPM \u00b7 L"+lvl+" \u00b7 "+labelOf(mark)+(rawMark==="lost"?" \u00b7 lost count":"")+tagTxt,secs:secs,bpmVal:bpmv,level:lvl,range:rangeLabel("sw",bpmv,secs,rawMark),lost:(rawMark==="lost")||undefined,streakGain:gainNote,advancedTo:advancedTo,maint:maint});
+    if(tm){tm.elapsed=0;tm.left=tm.total;tm.bpmAtStop=null;tm.completed=false;}honestMark[sk+"|"+sn]=null;save();renderKeys();renderLog();renderWeek();renderStreak();returnToToday();return;
+  }
+  if((t=e.target.closest("[data-engtoggle]"))){var ev=t.getAttribute("data-engtoggle").split("|");var ek=ev[0],eno=+ev[1];openEng[ek]=openEng[ek]===eno?null:eno;renderKeys();var en=ENGINES[eno-1];if(openEng[ek]===eno){setSig(en.sig);}return;}
+  if((t=e.target.closest("[data-emark]"))){var emv=t.getAttribute("data-emark").split("|");var emk="eng|"+emv[0]+"|"+emv[1];var emm=t.getAttribute("data-v");honestMark[emk]=honestMark[emk]===emm?null:emm;renderKeys();return;}
+  if((t=e.target.closest("[data-esave]"))){
+    var xv=t.getAttribute("data-esave").split("|");var xk=xv[0],xn=+xv[1],xname=xv[2];
+    var eraw=honestMark["eng|"+xk+"|"+xn];if(!eraw)return;var emark=(eraw==="lost")?"half":eraw;
+    var tid2="eng-"+xk+"-"+xn;var tm2=timers[tid2];if(!tm2||!tm2.completed)return;var secs2=tm2?tm2.total:0;var ebpmv=(tm2&&tm2.bpmAtStop)?tm2.bpmAtStop:metroBpm;
+    var ed=state.engines[xk][xn];
+    var ecounts=secs2>=MIN_SEC_MAINT; // engines use the 2-min floor
+    var eGain=null,eAdv=null;
+    if(emark==="clean"&&ecounts){
+      if(ebpmv!==ed.curBpm){ed.curBpm=ebpmv;ed.curStreak=1;eGain="0\u21921 @ "+ebpmv;}
+      else{var eb=ed.curStreak;ed.curStreak=Math.min(UNLOCK_STREAK,ed.curStreak+1);if(ed.curStreak>eb)eGain=eb+"\u2192"+ed.curStreak+" @ "+ebpmv;}
+      if(ed.curStreak>=UNLOCK_STREAK && ebpmv>ed.bestPassed){ed.bestPassed=ebpmv;eAdv="cleared @ "+ebpmv;}
+      else if(ed.curStreak>=UNLOCK_STREAK && ebpmv===ed.bestPassed){eAdv="re-confirmed @ "+ebpmv;}
+    } else if(emark!=="clean"){
+      if(ed.curStreak>0)eGain="reset @ "+ed.curBpm;
+      ed.curStreak=0;ed.curBpm=ebpmv;
+    }
+    pushLog({type:"engine",head:"Key of "+xk+" \u00b7 Eng "+xn+" "+xname,meta:ebpmv+" BPM \u00b7 "+labelOf(emark)+(eraw==="lost"?" \u00b7 lost count":"")+(ecounts?"":" \u00b7 <2min"),secs:secs2,bpmVal:ebpmv,range:rangeLabel("sw",ebpmv,secs2,eraw),lost:(eraw==="lost")||undefined,streakGain:eGain,advancedTo:eAdv});
+    if(tm2){tm2.elapsed=0;tm2.left=tm2.total;tm2.bpmAtStop=null;tm2.completed=false;}honestMark["eng|"+xk+"|"+xn]=null;save();renderKeys();renderLog();renderWeek();renderStreak();returnToToday();return;
+  }
+});
+
+/* ---------- weekly ---------- */
+function renderWeek(){
+  var b=document.getElementById("weekBody");var wk=Date.now()-7*86400000;
+  var recent=state.log.filter(function(e){return e.ts&&e.ts>=wk;});
+  var h='<div><div class="wglbl">Switch progress (only keys you\u2019ve started)</div>';
+  var anyShown=false;
+  KEYS.forEach(function(k){
+    // a key is "active" if any of its pairs has progress OR its chords have been started
+    var pairsList=pairsForKey(k);
+    var keyHasActivity = pairsList.some(function(pn){var pd=state.pairs[k.id][pn];return pd.bestPassed>0||pd.curStreak>0||pd.sprintBest>0;})
+                        || k.loop.some(function(ch){return state.chords[k.id][ch]===true;});
+    if(!keyHasActivity)return; // hide untouched keys entirely
+    pairsList.forEach(function(pn){
+      var pd=state.pairs[k.id][pn];
+      // within an active key, only show pairs that themselves have some progress
+      if(pd.bestPassed===0 && pd.curStreak===0 && pd.sprintBest===0)return;
+      anyShown=true;
+      var val = pd.bestPassed>0 ? ("best "+pd.bestPassed+" \u00b7 now "+pd.curStreak+"/"+UNLOCK_STREAK+"@"+pd.curBpm)
+                                : (pd.curStreak>0 ? (pd.curStreak+"/"+UNLOCK_STREAK+" @ "+pd.curBpm) : "\u2014");
+      h+='<div class="wkrow"><span class="n">'+k.id+" "+pn+'</span><span class="v">'+val+'</span></div>';
+    });
+  });
+  if(!anyShown){ h+='<div class="wkrow"><span class="n" style="color:var(--dim)">No switch progress logged yet \u2014 start a key to see it here.</span></div>'; }
+  h+='</div><div><div class="wglbl">Sessions logged (last 7 days)</div>';
+  var byType={warmup:0,chord:0,pair:0,engine:0,song:0};
+  recent.forEach(function(e){if(byType[e.type]!=null)byType[e.type]++;});
+  h+='<div class="wkrow"><span class="n">Warm-ups</span><span class="v'+(byType.warmup?"":" none")+'">'+byType.warmup+'</span></div>';
+  h+='<div class="wkrow"><span class="n">Chord checks</span><span class="v'+(byType.chord?"":" none")+'">'+byType.chord+'</span></div>';
+  h+='<div class="wkrow"><span class="n">Switch sessions</span><span class="v'+(byType.pair?"":" none")+'">'+byType.pair+'</span></div>';
+  h+='<div class="wkrow"><span class="n">Engine sessions</span><span class="v'+(byType.engine?"":" none")+'">'+byType.engine+'</span></div>';
+  h+='<div class="wkrow"><span class="n">Song run-throughs</span><span class="v'+(byType.song?"":" none")+'">'+byType.song+'</span></div>';
+  h+='</div>';
+  b.innerHTML=h;
+}
+
+/* ---------- Songs ---------- */
+var songFormOpen=false;      // false, "new", or a song id being edited
+function escapeHtml(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+var STATUS_LABEL={learning:"Learning",comfortable:"Comfortable",ready:"Performance-ready"};
+function renderSongs(){
+  var b=document.getElementById("songsBody");if(!b)return;
+  var h="";
+  // form (new or edit) shows at top
+  if(songFormOpen){
+    var editing = songFormOpen!=="new";
+    var sg = editing ? state.songs.find(function(x){return x.id===songFormOpen;}) : null;
+    var fName=sg?escapeHtml(sg.name):"", fKey=sg?escapeHtml(sg.key):"", fCh=sg?escapeHtml(sg.chords):"", fMin=sg?sg.mins:"", fStrum=sg?escapeHtml(sg.strum):"", fStatus=sg?sg.status:"learning";
+    if(formStatusOverride)fStatus=formStatusOverride;
+    else if(pendingFormStatus)fStatus=pendingFormStatus;
+    h+='<div class="song-form">'+
+      '<h3>'+(editing?"Edit song":"Add a song")+'</h3>'+
+      '<label>Song name</label><input type="text" id="sf-name" value="'+fName+'" placeholder="Way Maker">'+
+      '<div class="row2">'+
+        '<div><label>Key / capo</label><input type="text" id="sf-key" value="'+fKey+'" placeholder="G  or  Capo 4 &rarr; B"></div>'+
+        '<div><label>Length (min)</label><input type="number" id="sf-min" value="'+fMin+'" min="0" step="0.5" placeholder="6"></div>'+
+      '</div>'+
+      '<label>Chords used</label><input type="text" id="sf-chords" value="'+fCh+'" placeholder="G  C  D  Em">'+
+      '<label>Strum / engine</label><input type="text" id="sf-strum" value="'+fStrum+'" placeholder="Engine 1  or  D DU D DU">'+
+      '<label>Status</label>'+
+      '<div class="status-pick">'+
+        '<button data-sfstatus="learning" class="'+(fStatus==="learning"?"sel":"")+'">Learning</button>'+
+        '<button data-sfstatus="comfortable" class="'+(fStatus==="comfortable"?"sel":"")+'">Comfortable</button>'+
+        '<button data-sfstatus="ready" class="'+(fStatus==="ready"?"sel":"")+'">Ready</button>'+
+      '</div>'+
+      '<div class="formbtns">'+
+        '<button class="savebtn2" id="sf-save">'+(editing?"Save changes":"Add song")+'</button>'+
+        '<button class="cancelbtn" id="sf-cancel">Cancel</button>'+
+      '</div>'+
+    '</div>';
+  }
+  if(!state.songs.length && !songFormOpen){
+    h+='<div class="song-empty">No songs yet. Add the songs you\u2019re learning to track them here.</div>';
+  } else if(state.songs.length){
+    // daily total minutes from songs
+    var songMinsToday=0;
+    state.songs.forEach(function(sg){ songMinsToday += (sg.todayCount||0)*(sg.mins||0); });
+    if(songMinsToday>0){
+      h+='<div class="song-total">Song practice today: <b>'+round1(songMinsToday)+' min</b> across your list</div>';
+    }
+    state.songs.forEach(function(sg){
+      var stCls = sg.status==="ready"?"ready":sg.status==="comfortable"?"comfortable":"learning";
+      var todayMins = (sg.todayCount||0)*(sg.mins||0);
+      h+='<div class="song-card">'+
+        '<div class="song-head">'+
+          '<div>'+
+            '<div class="song-name">'+escapeHtml(sg.name)+'</div>'+
+            (sg.key?('<div class="song-key">'+escapeHtml(sg.key)+'</div>'):'')+
+          '</div>'+
+          '<span class="song-status '+stCls+'">'+STATUS_LABEL[sg.status]+'</span>'+
+        '</div>'+
+        '<div class="song-meta">'+
+          (sg.chords?('Chords: <span class="song-chords">'+escapeHtml(sg.chords)+'</span><br>'):'')+
+          (sg.strum?('Strum: <b>'+escapeHtml(sg.strum)+'</b> &middot; '):'')+
+          (sg.mins?('<b>'+round1(sg.mins)+' min</b> per run'):'<b>no length set</b>')+
+        '</div>'+
+        '<div class="song-marks">'+chipsHTML("data-smk",sg.id,songMark[sg.id]||null,'data-bkind="song" data-bsecs="'+Math.round((sg.mins||0)*60)+'"')+'</div>'+
+        '<div class="song-practice">'+
+          '<button class="song-count-btn" data-songplus="'+sg.id+'">+ practiced</button>'+
+          '<span class="song-count-txt">today: <b>'+(sg.todayCount||0)+'\u00d7</b>'+(sg.mins?(' = <b>'+round1(todayMins)+' min</b>'):'')+' &middot; all-time <b>'+(sg.totalCount||0)+'\u00d7</b></span>'+
+        '</div>'+
+        '<div class="song-status-set">'+
+          '<button data-songstatus="'+sg.id+'|learning" class="'+(sg.status==="learning"?"sel learning":"")+'">Learning</button>'+
+          '<button data-songstatus="'+sg.id+'|comfortable" class="'+(sg.status==="comfortable"?"sel comfortable":"")+'">Comfortable</button>'+
+          '<button data-songstatus="'+sg.id+'|ready" class="'+(sg.status==="ready"?"sel ready":"")+'">Ready</button>'+
+        '</div>'+
+        '<div class="song-actions">'+
+          '<button class="song-mini" data-songedit="'+sg.id+'">edit</button>'+
+          '<button class="song-mini" data-songminus="'+sg.id+'">undo count</button>'+
+          '<button class="song-mini del" data-songdel="'+sg.id+'">delete</button>'+
+        '</div>'+
+      '</div>';
+    });
+  }
+  b.innerHTML=h;refreshBandChips();
+  // keep the add-song button hidden while the form is open (avoid double forms)
+  var addBtn=document.getElementById("addSongBtn");
+  if(addBtn)addBtn.style.display = songFormOpen ? "none" : "block";
+}
+function round1(n){ n=Math.round(n*10)/10; return (n%1===0)? String(n) : n.toFixed(1); }
+
+// draft holder so typed form values survive a status-button re-render
+var songFormDraft=null;
+function readSongForm(){
+  return {
+    name:(document.getElementById("sf-name")||{}).value||"",
+    key:(document.getElementById("sf-key")||{}).value||"",
+    chords:(document.getElementById("sf-chords")||{}).value||"",
+    mins:(document.getElementById("sf-min")||{}).value||"",
+    strum:(document.getElementById("sf-strum")||{}).value||""
+  };
+}
+function restoreSongFormDraft(){
+  if(!songFormDraft)return;
+  var map={"sf-name":"name","sf-key":"key","sf-chords":"chords","sf-min":"mins","sf-strum":"strum"};
+  Object.keys(map).forEach(function(id){var el=document.getElementById(id);if(el&&songFormDraft[map[id]]!=null)el.value=songFormDraft[map[id]];});
+}
+var pendingFormStatus=null; // status chosen in the form before save
+function openSongForm(idOrNew){ songFormOpen=idOrNew; songFormDraft=null; pendingFormStatus=null; renderSongs(); }
+function closeSongForm(){ songFormOpen=false; songFormDraft=null; pendingFormStatus=null; renderSongs(); }
+
+var addBtnEl=document.getElementById("addSongBtn");
+if(addBtnEl)addBtnEl.onclick=function(){ openSongForm("new"); var d=document.getElementById("songsDetails"); if(d&&!d.open)d.open=true; };
+
+var songsBodyEl=document.getElementById("songsBody");
+if(songsBodyEl)songsBodyEl.addEventListener("click",function(e){
+  var t;
+  // form status picker
+  if((t=e.target.closest("[data-sfstatus]"))){
+    pendingFormStatus=t.getAttribute("data-sfstatus");
+    songFormDraft=readSongForm(); // preserve typed text across the re-render
+    // update editing song's status live only in the form state; re-render form with selection
+    // temporarily stash chosen status by re-rendering with it applied
+    renderSongsWithFormStatus(pendingFormStatus);
+    restoreSongFormDraft();
+    return;
+  }
+  // save form
+  if((t=e.target.closest("#sf-save"))){
+    var vals=readSongForm();
+    var nm=(vals.name||"").trim();
+    if(!nm){ var ne=document.getElementById("sf-name"); if(ne)ne.focus(); return; }
+    var minsNum=parseFloat(vals.mins);
+    if(isNaN(minsNum)||minsNum<0)minsNum=0;
+    var chosenStatus = pendingFormStatus || (songFormOpen!=="new" ? (state.songs.find(function(x){return x.id===songFormOpen;})||{}).status : null) || "learning";
+    if(songFormOpen==="new"){
+      var newSong={ id:"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+        name:nm, key:(vals.key||"").trim(), chords:(vals.chords||"").trim(),
+        mins:minsNum, strum:(vals.strum||"").trim(), status:chosenStatus,
+        todayCount:0, countDay:todayKey(), totalCount:0 };
+      state.songs.push(newSong);
+    } else {
+      var ex=state.songs.find(function(x){return x.id===songFormOpen;});
+      if(ex){ ex.name=nm; ex.key=(vals.key||"").trim(); ex.chords=(vals.chords||"").trim(); ex.mins=minsNum; ex.strum=(vals.strum||"").trim(); ex.status=chosenStatus; }
+    }
+    songFormOpen=false; songFormDraft=null; pendingFormStatus=null;
+    save(); renderSongs();
+    return;
+  }
+  // cancel form
+  if((t=e.target.closest("#sf-cancel"))){ closeSongForm(); return; }
+  // + practiced
+  if((t=e.target.closest("[data-smk]"))){var smid=t.getAttribute("data-smk"),smv=t.getAttribute("data-v");songMark[smid]=songMark[smid]===smv?null:smv;renderSongs();return;}
+  if((t=e.target.closest("[data-songplus]"))){
+    if(!dayStatus().open123){flashLockToast("Songs unlock after the warm-up core, the Key A block and maintenance are done.");return;}
+    var pid=t.getAttribute("data-songplus");
+    var sraw=songMark[pid];if(!sraw){flashToast("Pick a mark first","Choose how the run went with the chips above + practiced.");return;}
+    var smk=(sraw==="lost")?"half":sraw;
+    var sg=state.songs.find(function(x){return x.id===pid;});
+    if(sg){
+      var tk=todayKey();
+      if(sg.countDay!==tk){ sg.todayCount=0; sg.countDay=tk; }
+      sg.todayCount=(sg.todayCount||0)+1;
+      sg.totalCount=(sg.totalCount||0)+1;
+      // log a run-through so it flows into daily minutes + history (secs from song length)
+      pushLog({type:"song",head:"Song \u00b7 "+sg.name,meta:(sg.key?sg.key+" \u00b7 ":"")+(sg.mins?round1(sg.mins)+" min run":"run-through")+" \u00b7 "+labelOf(smk)+(sraw==="lost"?" \u00b7 lost count":""),secs:Math.round((sg.mins||0)*60),songId:sg.id,mark:smk,range:rangeLabel("song",0,Math.round((sg.mins||0)*60),sraw),lost:(sraw==="lost")||undefined});
+      songMark[pid]=null; save(); renderSongs(); renderLog(); renderWeek(); renderStreak();
+    }
+    return;
+  }
+  // undo count (decrement today's counter; remove the most recent matching song log today)
+  if((t=e.target.closest("[data-songminus]"))){
+    var mid=t.getAttribute("data-songminus");
+    var msg=state.songs.find(function(x){return x.id===mid;});
+    if(msg && (msg.todayCount||0)>0){
+      msg.todayCount=msg.todayCount-1;
+      if(msg.totalCount>0)msg.totalCount=msg.totalCount-1;
+      // remove most recent song log entry for this song from today
+      var tk2=todayKey();
+      for(var i=0;i<state.log.length;i++){
+        if(state.log[i].type==="song"&&state.log[i].songId===mid&&state.log[i].dayKey===tk2){
+          if(state.log[i].secs)state.total=Math.max(0,(state.total||0)-1);
+          state.log.splice(i,1);break;
+        }
+      }
+      save(); renderSongs(); renderLog(); renderWeek(); renderStreak(); renderDaily();
+    }
+    return;
+  }
+  // status set on a card
+  if((t=e.target.closest("[data-songstatus]"))){
+    var parts=t.getAttribute("data-songstatus").split("|");
+    var ssg=state.songs.find(function(x){return x.id===parts[0];});
+    if(ssg){ ssg.status=parts[1]; save(); renderSongs(); }
+    return;
+  }
+  // edit
+  if((t=e.target.closest("[data-songedit]"))){ openSongForm(t.getAttribute("data-songedit")); return; }
+  // delete
+  if((t=e.target.closest("[data-songdel]"))){
+    var did=t.getAttribute("data-songdel");
+    var dsg=state.songs.find(function(x){return x.id===did;});
+    var nm2=dsg?dsg.name:"this song";
+    if(window.confirm("Delete \""+nm2+"\" from your song list? Its logged run-throughs stay in your history.")){
+      state.songs=state.songs.filter(function(x){return x.id!==did;});
+      save(); renderSongs();
+    }
+    return;
+  }
+});
+// helper: re-render the form area with a chosen status highlighted (before save)
+function renderSongsWithFormStatus(st){
+  // stash into the editing song temporarily? No — just re-render and mark the picker.
+  // We re-run renderSongs but override the form's status selection via a global.
+  formStatusOverride=st; renderSongs(); formStatusOverride=null;
+}
+var formStatusOverride=null;
+
+/* ---------- day toggle ---------- */
+/* ---------- day toggle (removed: tracks retired) ---------- */
+
+/* ---------- export / import ---------- */
+function downloadFile(filename,content,mime,addBom){
+  try{
+    var parts = addBom ? ["\ufeff",content] : [content];
+    var blob=new Blob(parts,{type:mime+";charset=utf-8"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+  }catch(e){ window.alert("Export failed on this device. Try a different browser."); }
+}
+function stamp(){var d=new Date();return d.getFullYear()+(""+(d.getMonth()+1)).padStart(2,"0")+(""+d.getDate()).padStart(2,"0");}
+function exportBackup(){
+  state.lastBackup=Date.now();save();renderToday();
+  var payload={app:"guitar-trainer",version:5,exported:new Date().toISOString(),state:state};
+  downloadFile("guitar-trainer-backup-"+stamp()+".json",JSON.stringify(payload,null,2),"application/json");
+}
+function asciiMeta(m){
+  // replace unicode bullets/arrows/checks with ASCII so any text viewer is safe
+  return (m||"").replace(/\u00b7/g," | ").replace(/\u2192/g,"->").replace(/\u2713/g,"[clean]").replace(/\u2717/g,"[sloppy]").replace(/~/g,"[half]");
+}
+function bar(n,total){var s="";for(var i=0;i<total;i++){s+= i<n?"#":"-";}return s;}
+function exportText(){
+  var L=[];
+  var line="==================================================";
+  L.push(line);
+  L.push("        GUITAR TRAINER  -  PRACTICE SUMMARY");
+  L.push(line);
+  L.push("Exported : "+new Date().toLocaleString());
+  L.push("Streak   : "+(state.streak||0)+" day(s)");
+  L.push("Sessions : "+(state.total||0)+" total");
+  L.push("");
+
+  // ---- WHERE TO START NEXT ----
+  L.push(line);
+  L.push("  WHERE TO START NEXT TIME");
+  L.push(line);
+  var todo=[];
+  KEYS.forEach(function(k){
+    if(!chordsAllClean(k.id)){
+      var need=k.loop.filter(function(c){return !state.chords[k.id][c];});
+      todo.push("Key of "+k.id+": confirm chords clean -> "+need.join(", "));
+      return;
+    }
+    if(!enginesUnlocked(k.id)){
+      pairsForKey(k).forEach(function(pn){
+        var pd=state.pairs[k.id][pn];
+        if(!pairPassed(k.id,pn)){
+          var hint;
+          if(pd.bestPassed>0 && pd.bestPassed<UNLOCK_BPM){
+            hint="passed "+pd.bestPassed+" BPM, climb toward "+UNLOCK_BPM+" (now "+pd.curStreak+"/"+UNLOCK_STREAK+" @ "+pd.curBpm+")";
+          } else if(pd.curStreak>0){
+            hint=pd.curStreak+"/"+UNLOCK_STREAK+" at "+pd.curBpm+" BPM, "+(UNLOCK_STREAK-pd.curStreak)+" more clean at this speed";
+          } else {
+            hint="start ~45 BPM, target "+UNLOCK_BPM+"+";
+          }
+          todo.push("Key of "+k.id+" switch "+asciiMeta(pn)+": "+hint);
+        }
+      });
+    } else {
+      // engines unlocked: suggest the least-developed engine to push
+      var lowest=null;
+      ENGINES.forEach(function(en){
+        var ed=state.engines[k.id][en.n];
+        if(lowest===null || ed.bestPassed<state.engines[k.id][lowest].bestPassed) lowest=en.n;
+      });
+      var led=state.engines[k.id][lowest];
+      var lname=ENGINES[lowest-1].name;
+      if(led.bestPassed>0){
+        todo.push("Key of "+k.id+": engines open. Weakest = E"+lowest+" "+lname+" (best "+led.bestPassed+", now "+led.curStreak+"/"+UNLOCK_STREAK+" @ "+led.curBpm+")");
+      } else {
+        todo.push("Key of "+k.id+": engines open. Start E"+lowest+" "+lname+" - set your strum speed and build a streak");
+      }
+    }
+  });
+  if(!todo.length)todo.push("All gates passed. Push BPM higher and add engines.");
+  todo.forEach(function(t){L.push("  - "+t);});
+  L.push("");
+
+  // ---- PROGRESS ----
+  L.push(line);
+  L.push("  PROGRESS BY KEY");
+  L.push(line);
+  KEYS.forEach(function(k){
+    var phase = enginesUnlocked(k.id)?"ENGINES UNLOCKED":chordsAllClean(k.id)?"switch phase":"chord phase";
+    L.push("");
+    L.push("  Key of "+k.id+"   ["+phase+"]");
+    L.push("    chords: "+k.loop.map(function(c){return c+(state.chords[k.id][c]?"(ok)":"(--)");}).join("  "));
+    pairsForKey(k).forEach(function(pn){
+      var pd=state.pairs[k.id][pn];
+      var best = pd.bestPassed>0 ? ("best "+pd.bestPassed) : "not passed";
+      var tag=pairPassed(k.id,pn)?"  <-- UNLOCKED":"";
+      L.push("    "+padRight(asciiMeta(pn),9)+" ["+bar(pd.curStreak,UNLOCK_STREAK)+"] now "+pd.curStreak+"/"+UNLOCK_STREAK+" @ "+pd.curBpm+"   ("+best+")"+tag);
+      if(pd.sprintBest>0){
+        L.push("        sprint best: "+pd.sprintBest+" switches/1min"+(pd.sprintDate?(" (set "+pd.sprintDate+")"):""));
+      }
+    });
+    if(enginesUnlocked(k.id)){
+      L.push("    engines:");
+      ENGINES.forEach(function(en){
+        var ed=state.engines[k.id][en.n];
+        if(ed.bestPassed>0||ed.curStreak>0){
+          var eb=ed.bestPassed>0?("best "+ed.bestPassed):"in progress";
+          L.push("      "+padRight("E"+en.n+" "+en.name,22)+" ["+bar(ed.curStreak,UNLOCK_STREAK)+"] "+ed.curStreak+"/"+UNLOCK_STREAK+" @ "+ed.curBpm+"  ("+eb+")");
+        }
+      });
+    }
+  });
+  L.push("");
+
+  // ---- SONGS ----
+  if(state.songs && state.songs.length){
+    L.push(line);
+    L.push("  SONG LIST");
+    L.push(line);
+    L.push("");
+    state.songs.forEach(function(sg){
+      L.push("  "+sg.name+"   ["+(STATUS_LABEL[sg.status]||sg.status)+"]");
+      var bits=[];
+      if(sg.key)bits.push("key "+asciiMeta(sg.key));
+      if(sg.chords)bits.push("chords "+asciiMeta(sg.chords));
+      if(sg.mins)bits.push(round1(sg.mins)+" min/run");
+      if(sg.strum)bits.push("strum "+asciiMeta(sg.strum));
+      if(bits.length)L.push("    "+bits.join("  |  "));
+      L.push("    practiced today: "+(sg.todayCount||0)+"x"+(sg.mins?(" = "+round1((sg.todayCount||0)*(sg.mins||0))+" min"):"")+"   all-time: "+(sg.totalCount||0)+"x");
+      L.push("");
+    });
+  }
+
+  // ---- SESSION LOG ----
+  L.push(line);
+  L.push("  SESSION LOG");
+  L.push(line);
+  var byDay={},order=[];
+  state.log.slice().reverse().forEach(function(e){var dk=e.dayKey||"unknown";if(!byDay[dk]){byDay[dk]=[];order.push(dk);}byDay[dk].push(e);});
+  if(!order.length)L.push("  (no sessions logged)");
+  order.reverse().forEach(function(dk){
+    var items=byDay[dk];var sec=0;items.forEach(function(e){if(e.secs)sec+=e.secs;});
+    L.push("");
+    L.push("  --- "+dayHeading(dk)+"  |  "+Math.round(sec/60)+" min total ---");
+    items.slice().reverse().forEach(function(e){
+      L.push("    "+padRight(e.time,8)+" "+padRight(TYPE_LABEL[e.type]||"",12)+" "+asciiMeta(e.head||"")+"  ::  "+asciiMeta(e.meta));
+    });
+  });
+  L.push("");
+  L.push(line);
+  L.push("  Keep it honest. A clean 50 beats a sloppy 70.");
+  L.push(line);
+  downloadFile("guitar-trainer-summary-"+stamp()+".txt",L.join("\r\n"),"text/plain",true);
+}
+function padRight(s,n){s=""+s;while(s.length<n)s+=" ";return s;}
+function lastBpmForState(matchType,matchKeyPair){
+  // matches by reconstructing head; used in export where lastBpmFor needs exact head
+  for(var i=0;i<state.log.length;i++){var e=state.log[i];if(e.type===matchType&&e.bpmVal&&e.head&&e.head.replace("Key of ","").replace(" \u00b7 "," ")===matchKeyPair.replace("Key of ",""))return e.bpmVal;}
+  return null;
+}
+function importBackup(file){
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var data=JSON.parse(reader.result);
+      var incoming=data.state||data; // accept raw state too
+      if(!incoming||!incoming.pairs||!incoming.chords){throw new Error("not a valid backup");}
+      if(!window.confirm("Import this backup? It will REPLACE your current progress and log.")){return;}
+      state=incoming;
+      // re-run migration safety (handles old {bpm,streak} backups too)
+      if(!state.log)state.log=[];if(typeof state.streak!=="number")state.streak=0;if(typeof state.total!=="number")state.total=0;
+      delete state.engBpm;
+      if(!state.chords)state.chords={};if(!state.pairs)state.pairs={};if(!state.engines)state.engines={};
+      KEYS.forEach(function(k){if(!state.chords[k.id])state.chords[k.id]={};k.loop.forEach(function(c){if(typeof state.chords[k.id][c]!=="boolean")state.chords[k.id][c]=false;});if(!state.pairs[k.id])state.pairs[k.id]={};pairsForKey(k).forEach(function(p){state.pairs[k.id][p]=migratePair(state.pairs[k.id][p]);});if(!state.engines[k.id])state.engines[k.id]={};ENGINES.forEach(function(en){state.engines[k.id][en.n]=migrateEng(state.engines[k.id][en.n]);});});
+      if(!Array.isArray(state.songs))state.songs=[];
+      state.songs.forEach(function(sg){ migrateSong(sg); });
+      save();renderAll();
+      window.alert("Backup imported successfully.");
+    }catch(err){ window.alert("Import failed: "+(err.message||"invalid file")); }
+  };
+  reader.readAsText(file);
+}
+document.getElementById("exportBackup").onclick=exportBackup;
+document.getElementById("exportText").onclick=exportText;
+document.getElementById("importBtn").onclick=function(){document.getElementById("importFile").click();};
+document.getElementById("importFile").onchange=function(){if(this.files&&this.files[0])importBackup(this.files[0]);this.value="";};
+
+/* ---------- init ---------- */
+function renderAll(){renderStreak();renderWarmup();renderKeys();renderSongs();renderLog();renderWeek();renderToday();renderLocks();renderPlanBox();}
+setSig("4/4");
+setBpm(70);
+renderAll();
+
+document.getElementById("planApply").onclick=function(){
+  var r=parsePlan(document.getElementById("planText").value);
+  if(r.err){flashToast("Plan not applied",r.err);return;}
+  state.plan=r.plan;save();renderPlanBox();renderDaily();
+  flashToast("Plan applied","Week of "+r.plan.weekOf+". The Today card now follows it.");
+};
+document.getElementById("planClear").onclick=function(){
+  if(!window.confirm("Clear the weekly plan? The card goes back to its defaults."))return;
+  state.plan=null;save();document.getElementById("planText").value="";renderPlanBox();renderDaily();
+};
+try{if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().then(function(ok){window._persist=!!ok;renderToday();}).catch(function(){});}}catch(err){}
+try{if("serviceWorker" in navigator&&/^https?:/.test(location.protocol)){navigator.serviceWorker.register("sw.js").catch(function(){});}}catch(err){}
+</script>
+</body>
+</html>
